@@ -1,547 +1,649 @@
-react
-import React, { useState, useEffect } from 'react';
-import { Calendar, CalendarDays, FileText, PieChart, Moon, Sun, Settings, Calculator, ChevronRight, Activity, Building, User, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
-
-// --- CONFIGURATION & CONSTANTS ---
-const BASE_WAGE = 362;
-const HOURLY_RATE = 45.25;
-const FOOD_ALLOWANCE = 45;
-const OT_FOOD_ALLOWANCE = 35;
-
-const HOLIDAYS = ['2026-05-01', '2026-06-01', '2026-06-02'];
-
-const CYCLES = [
-  { id: 'apr', name: 'เมษายน 2026', start: '2026-04-22', end: '2026-04-25', payday: '05 พ.ค. 2026' },
-  { id: 'may', name: 'พฤษภาคม 2026', start: '2026-04-26', end: '2026-05-25', payday: '05 มิ.ย. 2026' },
-  { id: 'jun', name: 'มิถุนายน 2026', start: '2026-05-26', end: '2026-06-25', payday: '05 ก.ค. 2026' }
-];
-
-// Helper: Format Date
-const formatDateThai = (dateStr) => {
-  const date = new Date(dateStr);
-  const days = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
-  const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-  return `${days[date.getDay()]} ${String(date.getDate()).padStart(2, '0')} ${months[date.getMonth()]} ${date.getFullYear() + 543}`;
-};
-
-// Helper: Generate Initial Days Data
-const generateInitialDays = () => {
-  const daysData = {};
-  const startDate = new Date('2026-04-22');
-  const endDate = new Date('2026-06-25');
-  
-  let currentDate = new Date(startDate);
-
-  while (currentDate <= endDate) {
-    const dateStr = currentDate.toISOString().split('T')[0];
-    const isHoliday = HOLIDAYS.includes(dateStr);
-    const dayOfWeek = currentDate.getDay(); // 0 = Sunday
-    
-    // Determine Shift
-    let shift = 'none';
-    if (dateStr >= '2026-04-22' && dateStr <= '2026-04-25') shift = 'none'; 
-    else if (dateStr >= '2026-04-26' && dateStr <= '2026-05-02') shift = 'night';
-    else if (dateStr >= '2026-05-03' && dateStr <= '2026-05-16') shift = 'day';
-    else if (dateStr >= '2026-05-17' && dateStr <= '2026-05-30') shift = 'night';
-    else if (dateStr >= '2026-05-31' && dateStr <= '2026-06-14') shift = 'day';
-    else if (dateStr >= '2026-06-15') shift = 'night';
-
-    daysData[dateStr] = {
-      date: dateStr,
-      dayOfWeek,
-      isHoliday,
-      shift,
-      workType: 'none', 
-      kpi: 0,
-    };
-
-    currentDate.setDate(currentDate.getDate() + 1);
-  }
-  return daysData;
-};
-
-// --- MAIN APPLICATION COMPONENT ---
-export default function App() {
-  const [activeTab, setActiveTab] = useState('apr');
-  const [days, setDays] = useState(generateInitialDays());
-  
-  const [monthlyConfig, setMonthlyConfig] = useState({
-    apr: { diligence: 0, ssoEnabled: true },
-    may: { diligence: 0, ssoEnabled: true },
-    jun: { diligence: 0, ssoEnabled: true },
-  });
-
-  const handleTabChange = (id) => {
-    setActiveTab(id);
-  };
-
-  // Calculate earnings for a specific day
-  const calculateDay = (dayData) => {
-    if (dayData.workType === 'none') return { total: 0, base: 0, ot: 0, food: 0, otFood: 0, shift: 0, kpi: 0, isWorked: false };
-
-    const isSunday = dayData.dayOfWeek === 0;
-    const isHoliday = dayData.isHoliday;
-    
-    let multiplier = 1;
-    let otMultiplier = 1.5;
-    
-    if (isHoliday) {
-      multiplier = 3;
-      otMultiplier = 3;
-    } else if (isSunday) {
-      multiplier = 2;
-      otMultiplier = 2;
-    }
-
-    let otHours = 0;
-    if (dayData.workType === '11h') otHours = 3;
-    if (dayData.workType === '12h') otHours = 4;
-
-    const basePay = BASE_WAGE * multiplier;
-    const otPay = otHours * (HOURLY_RATE * otMultiplier);
-    const food = FOOD_ALLOWANCE;
-    const otFood = otHours > 0 ? OT_FOOD_ALLOWANCE : 0;
-    
-    let shiftPay = 0;
-    if (dayData.shift === 'night') {
-      shiftPay = otHours > 0 ? 100 : 70;
-    }
-
-    const total = basePay + otPay + food + otFood + shiftPay + Number(dayData.kpi);
-
-    return { total, basePay, otPay, food, otFood, shiftPay, kpi: Number(dayData.kpi), baseWageForSSO: BASE_WAGE, isWorked: true };
-  };
-
-  // Calculate monthly totals
-  const getMonthlySummary = (cycleId) => {
-    const cycle = CYCLES.find(c => c.id === cycleId);
-    let totalBase = 0, totalOT = 0, totalWelfare = 0, totalKPI = 0, baseSumForSSO = 0, daysWorkedCount = 0;
-
-    Object.values(days).forEach(day => {
-      if (day.date >= cycle.start && day.date <= cycle.end) {
-        const calc = calculateDay(day);
-        if (calc.isWorked) {
-          totalBase += calc.basePay;
-          totalOT += calc.otPay;
-          totalWelfare += (calc.food + calc.otFood + calc.shiftPay);
-          totalKPI += calc.kpi;
-          baseSumForSSO += calc.baseWageForSSO;
-          daysWorkedCount++;
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Salary Calc Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --apple-blue: #007AFF;
+            --apple-gray: #8E8E93;
+            --apple-bg: #F2F2F7;
+            --apple-red: #FF3B30;
+            --apple-green: #34C759;
+            --apple-orange: #FF9500;
         }
-      }
-    });
 
-    const config = monthlyConfig[cycleId];
-    const grossIncome = totalBase + totalOT + totalWelfare + totalKPI + Number(config.diligence);
-    
-    let ssoDeduction = 0;
-    if (config.ssoEnabled) {
-      ssoDeduction = Math.min(750, baseSumForSSO * 0.05);
-    }
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: var(--apple-bg);
+            color: #000;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+        }
 
-    const netIncome = grossIncome - ssoDeduction;
+        .dock-container {
+            position: fixed;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 35px;
+            padding: 10px 15px;
+            display: flex;
+            gap: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            z-index: 1000;
+            border: 0.5px solid rgba(255,255,255,0.3);
+            width: fit-content;
+            max-width: 90%;
+        }
 
-    return { grossIncome, netIncome, ssoDeduction, daysWorkedCount, totalBase, totalOT, totalWelfare, totalKPI, extras: Number(config.diligence) };
-  };
+        .dock-item {
+            width: 55px;
+            height: 55px;
+            border-radius: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+            position: relative;
+        }
 
-  const handleDayUpdate = (date, field, value) => {
-    setDays(prev => ({
-      ...prev,
-      [date]: { ...prev[date], [field]: value }
-    }));
-  };
+        .dock-item:active {
+            transform: scale(0.85);
+        }
 
-  const handleConfigUpdate = (cycleId, field, value) => {
-    setMonthlyConfig(prev => ({
-      ...prev,
-      [cycleId]: { ...prev[cycleId], [field]: value }
-    }));
-  };
+        .dock-item i {
+            font-size: 22px;
+            color: var(--apple-gray);
+            transition: color 0.3s;
+        }
 
-  // --- UI COMPONENTS (HR PORTAL THEME) ---
-  const TabButton = ({ id, icon: Icon, label }) => {
-    const isActive = activeTab === id;
-    return (
-      <button
-        onClick={() => handleTabChange(id)}
-        className={`flex-1 flex flex-col items-center justify-center py-3 border-t-2 transition-colors ${
-          isActive 
-            ? 'border-blue-600 text-blue-700 bg-blue-50/50' 
-            : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800'
-        }`}
-      >
-        <Icon size={20} className={isActive ? 'stroke-[2.5]' : 'stroke-2'} />
-        <span className="text-[10px] mt-1 font-semibold uppercase tracking-wider">{label}</span>
-      </button>
-    );
-  };
+        .dock-item.active i {
+            color: var(--apple-blue);
+        }
 
-  const renderDayCard = (day) => {
-    const isSunday = day.dayOfWeek === 0;
-    const isHoliday = day.isHoliday;
-    const calc = calculateDay(day);
-    const isWorked = day.workType !== 'none';
-    
-    const options = [
-      { value: 'none', label: 'Day Off' },
-      { value: '8h', label: '8H Reg' },
-    ];
-    if (isSunday || isHoliday) {
-      options.push({ value: '12h', label: '12H (OT)' });
-    } else {
-      options.push({ value: '11h', label: '11H (OT)' });
-    }
+        .dock-item span {
+            font-size: 9px;
+            margin-top: 4px;
+            font-weight: 500;
+            color: var(--apple-gray);
+        }
 
-    return (
-      <div key={day.date} className={`bg-white border rounded-lg mb-3 shadow-sm transition-colors ${isWorked ? 'border-l-4 border-l-blue-600 border-slate-200' : 'border-slate-200'}`}>
-        {/* Header Row */}
-        <div className="px-4 py-3 flex justify-between items-center border-b border-slate-100 bg-slate-50/50 rounded-t-lg">
-          <div className="flex items-center gap-3">
-            <div className={`w-2 h-2 rounded-full ${isWorked ? 'bg-blue-500' : 'bg-slate-300'}`}></div>
-            <div>
-              <div className={`text-sm font-semibold ${isHoliday ? 'text-purple-700' : isSunday ? 'text-red-600' : 'text-slate-800'}`}>
-                {formatDateThai(day.date)}
-              </div>
-              {(isHoliday || isSunday) && (
-                <div className="flex gap-1.5 mt-0.5">
-                  {isHoliday && <span className="text-[10px] font-medium px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded-sm">Public Holiday (x3)</span>}
-                  {isSunday && !isHoliday && <span className="text-[10px] font-medium px-1.5 py-0.5 bg-red-100 text-red-700 rounded-sm">Sunday (x2)</span>}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="text-right">
-             <div className={`text-base font-bold ${isWorked ? 'text-slate-900' : 'text-slate-400'}`}>
-                {calc.total > 0 ? `฿${calc.total.toLocaleString(undefined, {minimumFractionDigits: 2})}` : '-'}
-             </div>
-             {isWorked && <div className="text-[10px] text-slate-500 font-medium">Est. Earnings</div>}
-          </div>
-        </div>
+        .dock-item.active span {
+            color: var(--apple-blue);
+        }
 
-        {/* Input Row */}
-        <div className="p-4">
-          <div className="flex flex-col gap-3">
+        .dock-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            width: 5px;
+            height: 5px;
+            background: var(--apple-blue);
+            border-radius: 50%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 22px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            border: 0.5px solid rgba(0,0,0,0.05);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 0 16px 140px 16px;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 31px;
+        }
+
+        .toggle-switch input {
+            opacity: 0; width: 0; height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #E9E9EB;
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 27px;
+            width: 27px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+
+        input:checked + .slider {
+            background-color: var(--apple-green);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(21px);
+        }
+
+        .day-row {
+            border-bottom: 0.5px solid #E5E5EA;
+            padding: 14px 0;
+        }
+
+        .day-row:last-child {
+            border-bottom: none;
+        }
+
+        .badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-night { background: #F2F2F7; color: #5856D6; border: 0.5px solid #D1D1D6; }
+        .badge-day { background: #FFF9F2; color: #FF9500; border: 0.5px solid #FFE5CC; }
+        .badge-holiday { background: #FFF2F2; color: #FF3B30; border: 0.5px solid #FFD1D1; }
+        .badge-sun { background: #FFF0F5; color: #FF2D55; border: 0.5px solid #FFD1DC; }
+
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            background: rgba(242, 242, 247, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 100;
+            padding-top: 50px;
+            padding-bottom: 15px;
+        }
+
+        .btn-action {
+            transition: all 0.2s;
+        }
+        .btn-action:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <header class="sticky-header px-6">
+            <h1 id="page-title" class="text-3xl font-bold tracking-tight">เมษายน</h1>
+            <p id="page-subtitle" class="text-gray-500 text-sm mt-1">รอบ 22 เม.ย. - 25 เม.ย. (ออก 5 พ.ค.)</p>
+        </header>
+
+        <!-- Tab: April -->
+        <div id="tab-apr" class="tab-content active">
+            <div id="days-apr" class="card mt-4"></div>
             
-            <div className="flex items-center gap-4">
-              <div className="w-1/3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Work Hours</div>
-              <div className="w-2/3 flex bg-slate-100 p-0.5 rounded border border-slate-200">
-                {options.map(opt => {
-                  const isActive = day.workType === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => handleDayUpdate(day.date, 'workType', opt.value)}
-                      className={`flex-1 text-[11px] py-1.5 font-semibold rounded-sm transition-colors ${
-                        isActive 
-                          ? 'bg-white text-blue-700 shadow-sm border border-slate-200/50' 
-                          : 'text-slate-500 hover:text-slate-700'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  )
-                })}
-              </div>
+            <div class="card">
+                <h3 class="font-bold mb-4 text-gray-800">รายได้พิเศษรายเดือน</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">เบี้ยขยัน</span>
+                        <select id="bonus-apr" class="bg-gray-100 px-4 py-2 rounded-xl outline-none font-medium" onchange="calculate()">
+                            <option value="0">0</option>
+                            <option value="600">600</option>
+                            <option value="800">800</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">ค่าผลงาน</span>
+                        <div class="relative">
+                            <input type="number" id="perf-apr" class="bg-gray-100 px-4 py-2 rounded-xl w-32 text-right font-medium outline-none focus:ring-2 focus:ring-blue-500" value="0" oninput="calculate()">
+                            <span class="absolute left-3 top-2 text-gray-400 text-xs">฿</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div className={`flex items-center gap-4 transition-opacity duration-200 ${isWorked ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
-              <div className="w-1/3 text-xs font-semibold text-slate-600 uppercase tracking-wide">KPI Target</div>
-              <div className="w-2/3 relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">THB</span>
-                <input 
-                  type="number" 
-                  disabled={!isWorked}
-                  className="w-full bg-white border border-slate-300 text-sm font-semibold text-slate-900 rounded py-1.5 pl-10 pr-3 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
-                  placeholder="0.00"
-                  value={day.kpi || ''}
-                  onChange={(e) => handleDayUpdate(day.date, 'kpi', e.target.value)}
-                />
-              </div>
+            <div class="card bg-blue-600 text-white shadow-lg shadow-blue-200">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-blue-100 text-xs opacity-80 mb-1">รายได้สุทธิประจำเดือน</p>
+                        <h2 id="net-apr" class="text-3xl font-bold">0.00 ฿</h2>
+                    </div>
+                    <div class="text-right text-xs opacity-80">
+                        <p>รวม: <span id="total-apr">0.00</span></p>
+                        <p>หัก: <span id="ss-apr">0.00</span></p>
+                    </div>
+                </div>
             </div>
-
-          </div>
-
-          {/* Data Grid for Earnings */}
-          {isWorked && (
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Earning Details</div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">Base Wage</span>
-                  <span className="font-semibold text-slate-800">฿{calc.basePay.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">Overtime</span>
-                  <span className="font-semibold text-slate-800">฿{calc.otPay.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">Food Allowance</span>
-                  <span className="font-semibold text-slate-800">฿{(calc.food + calc.otFood).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600 flex items-center gap-1">Shift {day.shift === 'night' ? <Moon size={10}/> : <Sun size={10}/>}</span>
-                  <span className="font-semibold text-slate-800">฿{calc.shiftPay.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
-      </div>
-    );
-  };
 
-  const renderCycleView = (cycleId) => {
-    const cycle = CYCLES.find(c => c.id === cycleId);
-    const summary = getMonthlySummary(cycleId);
-    const config = monthlyConfig[cycleId];
-
-    return (
-      <div className="pb-24 animate-in fade-in duration-300">
-        
-        {/* Formal Payslip Header */}
-        <div className="bg-white border border-slate-200 rounded-lg shadow-sm mb-6 overflow-hidden">
-          <div className="bg-slate-800 px-5 py-4 text-white">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h2 className="text-lg font-bold">Payroll Summary</h2>
-                <div className="text-xs text-slate-300 mt-1 flex items-center gap-1.5">
-                  <CalendarDays size={12} /> {cycle.name}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider mb-1">Pay Date</div>
-                <div className="text-sm font-semibold bg-slate-700 px-2 py-1 rounded border border-slate-600">{cycle.payday}</div>
-              </div>
-            </div>
+        <!-- Tab: May -->
+        <div id="tab-may" class="tab-content">
+            <div id="days-may" class="card mt-4"></div>
             
-            <div className="pt-4 border-t border-slate-700">
-              <div className="text-xs text-slate-300 uppercase font-semibold tracking-wider mb-1">Net Pay (Estimated)</div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-semibold text-slate-400">THB</span>
-                <span className="text-4xl font-bold text-white tracking-tight">
-                  {summary.netIncome.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 px-5 py-3 border-t border-slate-200 flex justify-between items-center">
-            <div className="text-xs text-slate-600 font-medium">Period: {formatDateThai(cycle.start)} - {formatDateThai(cycle.end)}</div>
-            <div className="text-xs font-semibold text-blue-700 flex items-center gap-1">
-               <Clock size={12} /> {summary.daysWorkedCount} Days Logged
-            </div>
-          </div>
-        </div>
-
-        {/* Allowances & Deductions Form */}
-        <div className="mb-6">
-          <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 px-1 flex items-center gap-2">
-            <FileText size={14} className="text-slate-500" /> Adjustments Form
-          </h3>
-          
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200">
-            {/* Diligence */}
-            <div className="p-4 border-b border-slate-100">
-              <div className="flex justify-between items-center mb-2">
-                <label className="text-sm font-semibold text-slate-800">Diligence Allowance</label>
-              </div>
-              <div className="relative">
-                <select 
-                  className="w-full appearance-none bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-900 rounded-md py-2.5 pl-3 pr-10 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-colors"
-                  value={config.diligence}
-                  onChange={(e) => handleConfigUpdate(cycleId, 'diligence', e.target.value)}
-                >
-                  <option value="0">Not Eligible (฿0)</option>
-                  <option value="600">Tier 1 (฿600)</option>
-                  <option value="800">Tier 2 (฿800)</option>
-                  <option value="1000">Tier 3 (฿1,000)</option>
-                </select>
-                <ChevronRight size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" />
-              </div>
+            <div class="card">
+                <h3 class="font-bold mb-4 text-gray-800">รายได้พิเศษรายเดือน</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">เบี้ยขยัน</span>
+                        <select id="bonus-may" class="bg-gray-100 px-4 py-2 rounded-xl outline-none font-medium" onchange="calculate()">
+                            <option value="0">0</option>
+                            <option value="600">600</option>
+                            <option value="800">800</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">ค่าผลงาน</span>
+                        <div class="relative">
+                            <input type="number" id="perf-may" class="bg-gray-100 px-4 py-2 rounded-xl w-32 text-right font-medium outline-none" value="0" oninput="calculate()">
+                            <span class="absolute left-3 top-2 text-gray-400 text-xs">฿</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            {/* SSO */}
-            <div className="p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <div className="text-sm font-semibold text-slate-800">Social Security Fund (SSO)</div>
-                  <div className="text-xs text-slate-500 mt-1">Standard 5% deduction, max ฿750/month.</div>
+            <div class="card bg-blue-600 text-white shadow-lg">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-blue-100 text-xs opacity-80 mb-1">รายได้สุทธิประจำเดือน</p>
+                        <h2 id="net-may" class="text-3xl font-bold">0.00 ฿</h2>
+                    </div>
+                    <div class="text-right text-xs opacity-80">
+                        <p>รวม: <span id="total-may">0.00</span></p>
+                        <p>หัก: <span id="ss-may">0.00</span></p>
+                    </div>
                 </div>
-                
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    className="sr-only peer" 
-                    checked={config.ssoEnabled}
-                    onChange={(e) => handleConfigUpdate(cycleId, 'ssoEnabled', e.target.checked)}
-                  />
-                  <div className="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-              </div>
-              {config.ssoEnabled && (
-                <div className="mt-3 bg-red-50 border border-red-100 rounded text-xs text-red-700 px-3 py-2 flex items-center justify-between">
-                  <span>Current Deduction Amount:</span>
-                  <span className="font-bold">-฿{summary.ssoDeduction.toFixed(2)}</span>
-                </div>
-              )}
             </div>
-          </div>
         </div>
 
-        {/* Timesheet Section */}
-        <div>
-          <div className="flex justify-between items-end mb-3 px-1">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-              <Calendar size={14} className="text-slate-500" /> Timesheet Entries
-            </h3>
-          </div>
-          
-          <div>
-            {Object.values(days)
-              .filter(day => day.date >= cycle.start && day.date <= cycle.end)
-              .sort((a, b) => a.date.localeCompare(b.date))
-              .map(day => renderDayCard(day))
-            }
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderSummaryView = () => {
-    let total3Months = 0;
-    const summaries = CYCLES.map(c => {
-      const sum = getMonthlySummary(c.id);
-      total3Months += sum.netIncome;
-      return { ...c, ...sum };
-    });
-
-    return (
-      <div className="pb-24 animate-in fade-in duration-300">
-        
-        {/* Total Summary Hero */}
-        <div className="bg-slate-800 rounded-lg p-6 text-white shadow-sm mb-6 border border-slate-700">
-          <div className="flex items-center gap-2 mb-4">
-            <Building size={16} className="text-slate-400" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">Year-To-Date (Q2) Summary</span>
-          </div>
-          <div className="text-[10px] text-slate-400 uppercase tracking-widest mb-1">Total Net Income</div>
-          <div className="text-4xl font-bold tracking-tight">
-            THB {total3Months.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-          </div>
-        </div>
-
-        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 px-1 flex items-center gap-2">
-          <PieChart size={14} className="text-slate-500" /> Breakdown by Payroll Cycle
-        </h3>
-
-        <div className="space-y-4">
-          {summaries.map(s => (
-            <div key={s.id} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex justify-between items-center">
-                <div>
-                  <div className="font-bold text-slate-800 text-sm">{s.name}</div>
-                  <div className="text-[10px] font-medium text-slate-500 uppercase mt-0.5">Pay Date: {s.payday}</div>
+        <!-- Tab: June -->
+        <div id="tab-jun" class="tab-content">
+            <div id="days-jun" class="card mt-4"></div>
+            
+            <div class="card">
+                <h3 class="font-bold mb-4 text-gray-800">รายได้พิเศษรายเดือน</h3>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">เบี้ยขยัน</span>
+                        <select id="bonus-jun" class="bg-gray-100 px-4 py-2 rounded-xl outline-none font-medium" onchange="calculate()">
+                            <option value="0">0</option>
+                            <option value="600">600</option>
+                            <option value="800">800</option>
+                            <option value="1000">1000</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">ค่าผลงาน</span>
+                        <div class="relative">
+                            <input type="number" id="perf-jun" class="bg-gray-100 px-4 py-2 rounded-xl w-32 text-right font-medium outline-none" value="0" oninput="calculate()">
+                            <span class="absolute left-3 top-2 text-gray-400 text-xs">฿</span>
+                        </div>
+                    </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-base font-bold text-blue-700">฿{s.netIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
-                  <div className="text-[10px] font-semibold text-slate-500 uppercase mt-0.5">{s.daysWorkedCount} Days Logged</div>
-                </div>
-              </div>
-              
-              <div className="p-4 space-y-3">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1 mb-2">Earnings</div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">Base Wage & Overtime</span>
-                  <span className="font-semibold text-slate-900">฿{(s.totalBase + s.totalOT).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">Welfare & Allowances</span>
-                  <span className="font-semibold text-slate-900">฿{s.totalWelfare.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">KPI & Diligence Bonus</span>
-                  <span className="font-semibold text-slate-900">฿{(s.totalKPI + s.extras).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                </div>
-                
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1 mt-4 mb-2">Deductions</div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-600">Social Security (SSO)</span>
-                  <span className="font-semibold text-red-600">-฿{s.ssoDeduction.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                </div>
-
-                <div className="flex justify-between items-center text-sm font-bold pt-3 mt-2 border-t border-slate-200">
-                  <span className="text-slate-800">Net Pay</span>
-                  <span className="text-slate-900">฿{s.netIncome.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                </div>
-              </div>
             </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
-  return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans selection:bg-blue-200">
-      
-      {/* Corporate Header */}
-      <header className="bg-[#0f172a] text-white sticky top-0 z-40 shadow-md">
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm shadow-inner border border-blue-500">
-              ME
+            <div class="card bg-blue-600 text-white shadow-lg">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <p class="text-blue-100 text-xs opacity-80 mb-1">รายได้สุทธิประจำเดือน</p>
+                        <h2 id="net-jun" class="text-3xl font-bold">0.00 ฿</h2>
+                    </div>
+                    <div class="text-right text-xs opacity-80">
+                        <p>รวม: <span id="total-jun">0.00</span></p>
+                        <p>หัก: <span id="ss-jun">0.00</span></p>
+                    </div>
+                </div>
             </div>
-            <div>
-              <h1 className="font-bold text-sm tracking-wide">HR Portal</h1>
-              <div className="text-[10px] text-slate-400 font-medium">Employee Self-Service</div>
+        </div>
+
+        <!-- Tab: Summary -->
+        <div id="tab-summary" class="tab-content">
+            <div class="card bg-gradient-to-br from-gray-900 to-gray-800 text-white mt-4 overflow-hidden relative">
+                <div class="relative z-10">
+                    <h2 class="text-xl font-bold mb-1">สรุปภาพรวม 3 เดือน</h2>
+                    <p class="text-gray-400 text-xs">เมษายน - มิถุนายน 2026</p>
+                    <div class="mt-8">
+                        <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">รายได้สุทธิสะสม</p>
+                        <p id="grand-total" class="text-4xl font-black text-blue-400">0.00 ฿</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-wallet absolute -right-4 -bottom-4 text-8xl opacity-10 rotate-12"></i>
             </div>
-          </div>
-          <div className="bg-slate-800 text-slate-300 text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-slate-700">
-            TH-2026
-          </div>
+
+            <div class="card">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-sm">หักประกันสังคม (SSO)</p>
+                            <p class="text-[10px] text-gray-400">5% สูงสุด 750฿/เดือน</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="ss-toggle" checked onchange="calculate()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 class="font-bold text-gray-500 text-xs uppercase tracking-wider mb-6">รายละเอียดรายเดือน</h3>
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center text-orange-500 border border-orange-100">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold">รอบเมษายน</p>
+                                <p class="text-xs text-gray-400">ออก 5 พ.ค.</p>
+                            </div>
+                        </div>
+                        <span id="sum-apr" class="font-bold text-lg">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 border border-blue-100">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold">รอบพฤษภาคม</p>
+                                <p class="text-xs text-gray-400">ออก 5 มิ.ย.</p>
+                            </div>
+                        </div>
+                        <span id="sum-may" class="font-bold text-lg">0.00</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 border border-purple-100">
+                                <i class="fa-solid fa-calendar-check"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold">รอบมิถุนายน</p>
+                                <p class="text-xs text-gray-400">ออก 5 ก.ค.</p>
+                            </div>
+                        </div>
+                        <span id="sum-jun" class="font-bold text-lg">0.00</span>
+                    </div>
+                </div>
+            </div>
         </div>
-      </header>
 
-      {/* Main Content Area */}
-      <main className="max-w-md mx-auto p-4 w-full">
-        {activeTab === 'apr' && renderCycleView('apr')}
-        {activeTab === 'may' && renderCycleView('may')}
-        {activeTab === 'jun' && renderCycleView('jun')}
-        {activeTab === 'summary' && renderSummaryView()}
-      </main>
-
-      {/* Solid Corporate Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-        <div className="max-w-md mx-auto flex">
-          <TabButton id="apr" icon={Calendar} label="Apr" />
-          <TabButton id="may" icon={Calendar} label="May" />
-          <TabButton id="jun" icon={Calendar} label="Jun" />
-          <TabButton id="summary" icon={FileText} label="Summary" />
+        <!-- Dock Navigation -->
+        <div class="dock-container">
+            <div class="dock-item active" onclick="switchTab('apr', 'เมษายน', 'รอบ 22 เม.ย. - 25 เม.ย. (ออก 5 พ.ค.)', this)">
+                <i class="fa-solid fa-calendar-day"></i>
+                <span>เม.ย.</span>
+            </div>
+            <div class="dock-item" onclick="switchTab('may', 'พฤษภาคม', 'รอบ 26 เม.ย. - 25 พ.ค. (ออก 5 มิ.ย.)', this)">
+                <i class="fa-solid fa-calendar-day"></i>
+                <span>พ.ค.</span>
+            </div>
+            <div class="dock-item" onclick="switchTab('jun', 'มิถุนายน', 'รอบ 26 พ.ค. - 25 มิ.ย. (ออก 5 ก.ค.)', this)">
+                <i class="fa-solid fa-calendar-day"></i>
+                <span>มิ.ย.</span>
+            </div>
+            <div class="dock-item" onclick="switchTab('summary', 'สรุปผล', 'ภาพรวมรายได้ทั้งหมด', this)">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>สรุป</span>
+            </div>
         </div>
-      </nav>
-      
-      {/* CSS Configurations */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-        
-        /* Clean Inputs */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type=number] { -moz-appearance: textfield; }
-
-        /* Subtle Fade In */
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-in {
-          animation: fadeIn 0.2s ease-out forwards;
-        }
-      `}} />
     </div>
-  );
-}
+
+    <script>
+        const CONFIG = {
+            baseWage: 362,
+            hourlyWage: 45.25,
+            food: 45,
+            otFood: 35,
+            shiftNight: 70,
+            shiftNightOT: 100,
+            holidays: [
+                '2026-05-01', // Labour
+                '2026-05-04', // Coronation
+                '2026-05-31', // User specified
+                '2026-06-01', // Asarnha Sub
+                '2026-06-02', // Queen Suthida Sub
+                '2026-06-03'  // Queen Suthida
+            ]
+        };
+
+        const cycles = {
+            apr: { start: '2026-04-22', end: '2026-04-25' },
+            may: { start: '2026-04-26', end: '2026-05-25' },
+            jun: { start: '2026-05-26', end: '2026-06-25' }
+        };
+
+        // Initialize state from localStorage or default
+        let state = JSON.parse(localStorage.getItem('salary_state_v2')) || {};
+
+        function getShift(dateStr) {
+            // Logic: Night until 2 May -> Day 3-16 May -> Night 17-30 May -> Day 31 May-14 Jun -> Night 15 Jun onwards
+            if (dateStr >= '2026-04-22' && dateStr <= '2026-04-25') return 'none';
+            if (dateStr <= '2026-05-02') return 'night';
+            if (dateStr >= '2026-05-03' && dateStr <= '2026-05-16') return 'day';
+            if (dateStr >= '2026-05-17' && dateStr <= '2026-05-30') return 'night';
+            if (dateStr >= '2026-05-31' && dateStr <= '2026-06-14') return 'day';
+            if (dateStr >= '2026-06-15') return 'night';
+            return 'day';
+        }
+
+        function getMultiplier(dateStr) {
+            const date = new Date(dateStr);
+            if (CONFIG.holidays.includes(dateStr)) return 3;
+            if (date.getDay() === 0) return 2;
+            return 1;
+        }
+
+        function generateDays(month) {
+            const container = document.getElementById(`days-${month}`);
+            container.innerHTML = '';
+            const start = new Date(cycles[month].start);
+            const end = new Date(cycles[month].end);
+            
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                const dateStr = d.toISOString().split('T')[0];
+                const dayName = d.toLocaleDateString('th-TH', { weekday: 'short' });
+                const dayNum = d.getDate();
+                const shift = getShift(dateStr);
+                const mult = getMultiplier(dateStr);
+                
+                if (!state[dateStr]) {
+                    state[dateStr] = { worked: false, ot: false, kpi: 0 };
+                }
+
+                const row = document.createElement('div');
+                row.className = 'day-row flex items-center justify-between';
+                
+                let badges = '';
+                if (mult === 3) badges += `<span class="badge badge-holiday ml-1">x3</span>`;
+                else if (mult === 2) badges += `<span class="badge badge-sun ml-1">x2</span>`;
+                
+                if (shift === 'night') badges += `<span class="badge badge-night ml-1">กะดึก</span>`;
+                else if (shift === 'day') badges += `<span class="badge badge-day ml-1">กะเช้า</span>`;
+
+                const otText = (mult === 1) ? 'OT 3 ชม.' : 'OT 4 ชม.';
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="text-center w-10">
+                            <div class="text-[10px] text-gray-400 uppercase font-bold">${dayName}</div>
+                            <div class="font-bold text-lg leading-tight">${dayNum}</div>
+                        </div>
+                        <div>
+                            <div class="flex items-center mb-1">
+                                <span class="text-xs font-semibold text-gray-500">${d.toLocaleDateString('th-TH', { month: 'short' })}</span>
+                                ${badges}
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="toggleDay('${dateStr}', 'worked')" class="btn-action text-[10px] px-3 py-1 rounded-full border ${state[dateStr].worked ? 'bg-green-500 text-white border-green-500 font-bold' : 'text-gray-400 border-gray-200'}">ทำงาน</button>
+                                <button onclick="toggleDay('${dateStr}', 'ot')" class="btn-action text-[10px] px-3 py-1 rounded-full border ${state[dateStr].ot ? 'bg-orange-500 text-white border-orange-500 font-bold' : 'text-gray-400 border-gray-200'}">${otText}</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[9px] text-gray-400 mb-1 font-bold uppercase">KPI</div>
+                        <input type="number" value="${state[dateStr].kpi}" oninput="updateKPI('${dateStr}', this.value)" class="w-16 bg-gray-100 rounded-lg p-1.5 text-right text-sm font-bold outline-none focus:ring-1 focus:ring-blue-300">
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function toggleDay(dateStr, field) {
+            state[dateStr][field] = !state[dateStr][field];
+            if (field === 'worked' && !state[dateStr].worked) state[dateStr].ot = false;
+            if (field === 'ot' && state[dateStr].ot) state[dateStr].worked = true;
+            saveState();
+            renderAll();
+            calculate();
+        }
+
+        function updateKPI(dateStr, val) {
+            state[dateStr].kpi = parseFloat(val) || 0;
+            saveState();
+            calculate();
+        }
+
+        function saveState() {
+            localStorage.setItem('salary_state_v2', JSON.stringify(state));
+        }
+
+        function switchTab(tabId, title, subtitle, el) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            document.querySelectorAll('.dock-item').forEach(d => d.classList.remove('active'));
+            el.classList.add('active');
+
+            document.getElementById('page-title').innerText = title;
+            document.getElementById('page-subtitle').innerText = subtitle;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function calculate() {
+            const months = ['apr', 'may', 'jun'];
+            let grandTotal = 0;
+            const useSSO = document.getElementById('ss-toggle').checked;
+
+            months.forEach(m => {
+                let total = 0;
+                let ssoBase = 0;
+                const start = new Date(cycles[m].start);
+                const end = new Date(cycles[m].end);
+
+                for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                    const dateStr = d.toISOString().split('T')[0];
+                    const dayData = state[dateStr] || { worked: false, ot: false, kpi: 0 };
+                    
+                    if (dayData.worked) {
+                        const mult = getMultiplier(dateStr);
+                        const shift = getShift(dateStr);
+                        
+                        // 1. Base Wage (8 hours)
+                        total += CONFIG.baseWage * mult;
+                        ssoBase += CONFIG.baseWage;
+
+                        // 2. OT Calculation
+                        if (dayData.ot) {
+                            const otHours = (mult === 1) ? 3 : 4;
+                            const otRate = (mult === 1) ? 1.5 : mult;
+                            total += (CONFIG.hourlyWage * otHours * otRate);
+                            // OT Food
+                            total += CONFIG.otFood;
+                        }
+
+                        // 3. Daily Food
+                        total += CONFIG.food;
+
+                        // 4. Shift Allowance
+                        if (shift === 'night') {
+                            total += dayData.ot ? CONFIG.shiftNightOT : CONFIG.shiftNight;
+                        }
+
+                        // 5. Daily KPI
+                        total += dayData.kpi;
+                    }
+                }
+
+                // Monthly Extras
+                const bonus = parseFloat(document.getElementById(`bonus-${m}`).value) || 0;
+                const perf = parseFloat(document.getElementById(`perf-${m}`).value) || 0;
+                total += bonus + perf;
+
+                // Social Security
+                let sso = 0;
+                if (useSSO) {
+                    sso = Math.min(750, ssoBase * 0.05);
+                }
+
+                const net = total - sso;
+                
+                document.getElementById(`total-${m}`).innerText = total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ฿';
+                document.getElementById(`ss-${m}`).innerText = sso.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ฿';
+                document.getElementById(`net-${m}`).innerText = net.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ฿';
+                document.getElementById(`sum-${m}`).innerText = net.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                
+                grandTotal += net;
+            });
+
+            document.getElementById('grand-total').innerText = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ฿';
+        }
+
+        function renderAll() {
+            generateDays('apr');
+            generateDays('may');
+            generateDays('jun');
+        }
+
+        // Init
+        renderAll();
+        calculate();
+    </script>
+</body>
+</html>
