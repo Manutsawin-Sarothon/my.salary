@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Modern Payroll App</title>
+    <title>Modern Payroll App (Full Year)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -14,7 +14,7 @@
 
         body { 
             font-family: 'Sarabun', sans-serif; 
-            background-color: #f8fafc; /* Lighter modern slate */
+            background-color: #f8fafc; 
             color: #0f172a; 
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
@@ -37,7 +37,7 @@
         .cell-ot { background-color: #ffffff; border: 1.5px solid #93c5fd; box-shadow: 0 2px 10px -3px rgba(147, 197, 253, 0.4); }
         .cell-holiday-off { background-color: #fff1f2; border: 1px solid #ffe4e6; color: #f43f5e; }
 
-        input[type="number"], select { user-select: auto; font-size: 16px !important; }
+        input[type="number"], input[type="text"], input[type="date"], select { user-select: auto; font-size: 16px !important; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -50,8 +50,7 @@
         .pb-safe { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
         .pb-safe-extended { padding-bottom: max(7rem, calc(6rem + env(safe-area-inset-bottom))); }
 
-        /* Custom Gradients */
-        .bg-glass { background-color: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+        .bg-glass { background-color: rgba(255, 255, 255, 0.90); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
         .card-gradient { background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%); }
     </style>
 </head>
@@ -60,35 +59,48 @@
 <div id="app" class="h-screen flex flex-col relative" v-cloak>
     
     <!-- Modern Header (Glassmorphism) -->
-    <header class="bg-glass border-b border-slate-200/50 pt-safe px-5 pb-3 sticky top-0 z-30 shadow-sm">
+    <header class="bg-glass border-b border-slate-200/60 pt-safe px-5 pb-3 sticky top-0 z-30 shadow-sm">
         <div class="flex justify-between items-center mb-3 mt-2">
             <div class="flex items-center gap-2">
-                <div class="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white">
-                    <i class="ph-bold ph-wallet text-xl"></i>
+                <div class="w-10 h-10 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white shrink-0">
+                    <i class="ph-bold ph-calendar-check text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-extrabold tracking-tight text-slate-800 leading-none">Corp<span class="text-indigo-600">HR</span></h1>
-                    <p class="text-slate-500 text-[11px] font-sans-en font-medium mt-0.5 tracking-wide uppercase">Payroll Dashboard</p>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-extrabold tracking-tight text-slate-800 leading-none">Corp<span class="text-indigo-600">HR</span></h1>
+                        <!-- Year Selector -->
+                        <select v-model="selectedYear" class="bg-indigo-50 border border-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-lg outline-none cursor-pointer">
+                            <option v-for="y in availableYears" :key="y" :value="y">ปี {{ y + 543 }}</option>
+                        </select>
+                    </div>
+                    <p class="text-slate-500 text-[11px] font-sans-en font-medium mt-1 tracking-wide uppercase">Payroll Calendar</p>
                 </div>
             </div>
-            <button class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors active:scale-95" @click="showSettings = true">
-                <i class="ph-fill ph-gear-six text-xl"></i>
-            </button>
+            <div class="flex gap-2">
+                <!-- Holidays Menu Button -->
+                <button class="w-9 h-9 bg-rose-50 rounded-full flex items-center justify-center text-rose-600 hover:bg-rose-100 transition-colors active:scale-95 shadow-sm border border-rose-100" @click="showHolidaySettings = true">
+                    <i class="ph-fill ph-calendar-star text-lg"></i>
+                </button>
+                <!-- Settings Menu Button -->
+                <button class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors active:scale-95 shadow-sm border border-slate-200" @click="showSettings = true">
+                    <i class="ph-fill ph-gear-six text-lg"></i>
+                </button>
+            </div>
         </div>
 
-        <!-- Sleek Tabs -->
-        <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2">
+        <!-- Sleek Tabs (12 Months) -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2 snap-x">
             <button v-for="cycle in cycles" :key="cycle.id" 
                 @click="selectedTab = cycle.id"
-                :class="['px-5 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-300 active:scale-95', 
-                         selectedTab === cycle.id ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200']">
+                :class="['px-5 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-300 snap-center shrink-0 border', 
+                         selectedTab === cycle.id ? 'bg-slate-800 text-white shadow-md border-slate-800' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200']">
                 {{ cycle.name }}
             </button>
-            <div class="w-px h-6 bg-slate-300 self-center mx-1"></div>
+            <div class="w-px h-6 bg-slate-300 self-center mx-1 shrink-0"></div>
             <button @click="selectedTab = 'summary'"
-                :class="['px-5 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-300 active:scale-95 flex items-center', 
-                         selectedTab === 'summary' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100']">
-                <i class="ph-bold ph-chart-polar mr-1.5 text-base"></i> สรุปไตรมาส
+                :class="['px-5 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all duration-300 snap-center shrink-0 flex items-center border', 
+                         selectedTab === 'summary' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 border-indigo-600' : 'bg-indigo-50 text-indigo-600 border-indigo-100']">
+                <i class="ph-bold ph-chart-polar mr-1.5 text-base"></i> สรุปรายปี
             </button>
         </div>
     </header>
@@ -97,11 +109,10 @@
     <main class="flex-1 overflow-y-auto pb-safe-extended relative z-10">
         
         <!-- CALENDAR VIEW -->
-        <div v-if="selectedTab !== 'summary'" class="p-5 space-y-5">
+        <div v-if="selectedTab !== 'summary'" class="p-5 space-y-5 animate-[fadeIn_0.2s_ease-out]">
             
             <!-- Beautiful Cycle Info Card -->
             <div class="bg-white rounded-3xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden">
-                <!-- Decorative blob -->
                 <div class="absolute -right-6 -top-6 w-24 h-24 bg-indigo-50 rounded-full opacity-70 blur-xl"></div>
                 
                 <div class="flex justify-between items-start relative z-10">
@@ -111,7 +122,7 @@
                     </div>
                     <div class="text-right">
                         <p class="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mb-1">วันเงินออก (Payday)</p>
-                        <div class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-xl inline-block font-sans-en font-bold text-[13px] border border-emerald-100">
+                        <div class="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-xl inline-block font-sans-en font-bold text-[13px] border border-emerald-100 shadow-sm">
                             {{ currentCycleData.payday }}
                         </div>
                     </div>
@@ -119,9 +130,9 @@
                 
                 <!-- Quick hints -->
                 <div class="mt-5 flex gap-3 text-[11px] text-slate-500 items-center bg-slate-50 rounded-2xl py-2.5 px-3 border border-slate-100">
-                    <div class="flex items-center flex-1 justify-center"><i class="ph-fill ph-cursor-click text-indigo-500 mr-1.5 text-base"></i> แตะเปลี่ยนกะ</div>
+                    <div class="flex items-center flex-1 justify-center"><i class="ph-fill ph-cursor-click text-indigo-500 mr-1.5 text-base"></i> แตะเปลี่ยนกะ/OT</div>
                     <div class="w-px h-4 bg-slate-200"></div>
-                    <div class="flex items-center flex-1 justify-center"><i class="ph-fill ph-hand-pointing text-amber-500 mr-1.5 text-base"></i> แตะค้างใส่ KPI</div>
+                    <div class="flex items-center flex-1 justify-center"><i class="ph-fill ph-hand-pointing text-amber-500 mr-1.5 text-base"></i> แตะค้างใส่ KPI/สลับกะ</div>
                 </div>
             </div>
 
@@ -178,7 +189,7 @@
                             </div>
 
                             <!-- Holiday Dot -->
-                            <div v-if="day.isHoliday" class="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-rose-500"></div>
+                            <div v-if="day.isHoliday" class="absolute top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-rose-500 shadow-sm border border-white"></div>
                         </template>
                     </div>
                 </div>
@@ -204,39 +215,39 @@
 
         </div>
 
-        <!-- SUMMARY VIEW (FinTech Dashboard Style) -->
+        <!-- YEARLY SUMMARY VIEW -->
         <div v-if="selectedTab === 'summary'" class="p-5 space-y-5 animate-[fadeIn_0.3s_ease-out]">
             <!-- Premium Total Card -->
             <div class="card-gradient rounded-[2rem] p-7 shadow-xl shadow-indigo-900/20 text-white relative overflow-hidden">
                 <div class="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/4 blur-2xl"></div>
                 
-                <h2 class="text-indigo-200 text-xs font-semibold tracking-wider uppercase mb-2 relative z-10">รายได้สุทธิรวม 3 เดือน</h2>
+                <h2 class="text-indigo-200 text-xs font-semibold tracking-wider uppercase mb-2 relative z-10">รายได้สุทธิรวมทั้งปี {{ selectedYear + 543 }}</h2>
                 <div class="flex items-baseline gap-2 relative z-10 mb-6">
-                    <span class="text-[40px] font-black font-sans-en leading-none">{{ formatMoney(quarterlySummary.grandNetPay) }}</span>
+                    <span class="text-[40px] font-black font-sans-en leading-none">{{ formatMoney(yearlySummary.grandNetPay) }}</span>
                     <span class="text-indigo-300 font-medium">THB</span>
                 </div>
                 
                 <div class="flex justify-between items-center bg-white/10 backdrop-blur-md rounded-2xl p-4 relative z-10 border border-white/10">
                     <div>
                         <p class="text-indigo-200 text-[10px] uppercase font-semibold mb-1">รายรับทั้งหมด</p>
-                        <p class="text-[13px] font-bold font-sans-en text-white">+{{ formatMoney(quarterlySummary.grandIncome) }}</p>
+                        <p class="text-[13px] font-bold font-sans-en text-white">+{{ formatMoney(yearlySummary.grandIncome) }}</p>
                     </div>
                     <div class="w-px h-8 bg-white/20"></div>
                     <div class="text-right">
                         <p class="text-indigo-200 text-[10px] uppercase font-semibold mb-1">รายการหักรวม</p>
-                        <p class="text-[13px] font-bold font-sans-en text-white">-{{ formatMoney(quarterlySummary.grandDeduction) }}</p>
+                        <p class="text-[13px] font-bold font-sans-en text-white">-{{ formatMoney(yearlySummary.grandDeduction) }}</p>
                     </div>
                 </div>
             </div>
 
-            <div class="space-y-3">
-                <h3 class="text-[13px] font-bold text-slate-800 pl-1">รายละเอียดรายรอบบิล</h3>
-                <!-- Cycle List Items -->
+            <div class="space-y-3 pb-8">
+                <h3 class="text-[13px] font-bold text-slate-800 pl-1 uppercase tracking-wider">รายละเอียดทั้ง 12 รอบบิล</h3>
+                
                 <div v-for="cycle in cycles" :key="cycle.id" class="bg-white rounded-3xl p-4 border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col gap-3">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center">
-                                <i class="ph-fill ph-calendar-blank text-slate-400 text-lg"></i>
+                            <div class="w-10 h-10 rounded-2xl bg-indigo-50/50 border border-indigo-50 flex items-center justify-center text-indigo-400">
+                                <span class="font-bold font-sans-en text-[13px]">{{ cycle.id.split('-')[1] }}</span>
                             </div>
                             <div>
                                 <h4 class="font-bold text-slate-800 text-[14px] leading-tight">{{ cycle.name }}</h4>
@@ -265,19 +276,18 @@
             <p class="text-[28px] font-black text-slate-800 font-sans-en leading-none tracking-tight">{{ formatMoney(cycleTotal.netPay) }}</p>
         </div>
         <button @click="showSettings = true" class="bg-slate-800 text-white hover:bg-slate-700 px-5 py-3 rounded-2xl text-[13px] font-bold flex items-center transition-transform active:scale-95 shadow-lg shadow-slate-800/20">
-            <i class="ph-bold ph-faders mr-2 text-lg"></i> ตั้งค่า
+            <i class="ph-bold ph-coins mr-2 text-lg"></i> เงินพิเศษ
         </button>
     </div>
 
     <!-- OVERLAYS & MODALS -->
     
-    <!-- Day Detail Modal (Modern Bottom Sheet) -->
+    <!-- Day Detail Modal -->
     <Transition name="fade">
         <div v-if="activeDayModal" class="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-[2px]" @click="closeModal"></div>
     </Transition>
     <Transition name="bottom-sheet">
         <div v-if="activeDayModal" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-50 overflow-hidden flex flex-col max-h-[90vh]">
-            <!-- Drag Handle -->
             <div class="w-14 h-1.5 bg-slate-200 rounded-full mx-auto mt-4 mb-2 shrink-0"></div>
             
             <div class="px-6 py-4 flex justify-between items-start bg-white z-10 shrink-0">
@@ -295,16 +305,29 @@
 
             <div class="p-6 overflow-y-auto space-y-6 pb-safe">
                 
+                <!-- Shift Selection -->
+                <div class="space-y-2">
+                    <label class="text-[13px] font-bold text-slate-700 pl-1">เลือกกะทำงาน (Shift)</label>
+                    <div class="flex bg-slate-100 p-1.5 rounded-2xl">
+                        <button @click="modalShift = 'Day'" :class="modalShift === 'Day' ? 'bg-white shadow-sm text-amber-500 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-3 rounded-xl text-[14px] font-bold flex justify-center items-center transition-all">
+                            <i class="ph-fill ph-sun mr-2 text-lg"></i> กะเช้า
+                        </button>
+                        <button @click="modalShift = 'Night'" :class="modalShift === 'Night' ? 'bg-white shadow-sm text-indigo-500 border border-slate-200/50' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-3 rounded-xl text-[14px] font-bold flex justify-center items-center transition-all">
+                            <i class="ph-fill ph-moon-stars mr-2 text-lg"></i> กะดึก
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Work Status Selection -->
                 <div class="space-y-2">
-                    <label class="text-[13px] font-bold text-slate-700 pl-1">สถานะ และ กะทำงาน</label>
+                    <label class="text-[13px] font-bold text-slate-700 pl-1">ชั่วโมงทำงาน</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                            <i class="ph-fill text-lg" :class="activeDayModal.shift === 'Day' ? 'ph-sun text-amber-500' : (activeDayModal.shift === 'Night' ? 'ph-moon-stars text-indigo-500' : 'ph-calendar-blank text-slate-400')"></i>
+                            <i class="ph-fill ph-clock text-lg text-slate-400"></i>
                         </div>
                         <select v-model.number="modalWorkHours" @change="updateModalHours" class="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-12 pr-10 py-4 outline-none focus:ring-2 focus:ring-indigo-500 text-[15px] font-medium font-sans-en appearance-none cursor-pointer text-slate-800">
                             <option :value="0">หยุดงาน (Off)</option>
-                            <option v-for="hr in getAvailableHours(activeDayModal)" :key="hr" :value="hr">
+                            <option v-for="hr in getAvailableHours()" :key="hr" :value="hr">
                                 ทำงาน {{ hr }} ชม. {{ hr > 8 ? `(+OT ${hr-8}h)` : '' }}
                             </option>
                         </select>
@@ -315,7 +338,7 @@
                 </div>
 
                 <!-- KPI Input -->
-                <div class="space-y-2 transition-all" :class="modalWorkHours > 0 ? 'opacity-100 h-auto' : 'opacity-50 pointer-events-none'">
+                <div class="space-y-2 transition-all" :class="modalWorkHours > 0 ? 'opacity-100 h-auto' : 'opacity-50 pointer-events-none grayscale'">
                     <label class="text-[13px] font-bold text-slate-700 pl-1">ค่า KPI รายวัน (พิเศษ)</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -360,7 +383,7 @@
         </div>
     </Transition>
 
-    <!-- Global Settings Modal -->
+    <!-- Monthly Settings Modal -->
     <Transition name="fade">
         <div v-if="showSettings" class="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-[2px]" @click="showSettings = false"></div>
     </Transition>
@@ -368,18 +391,17 @@
         <div v-if="showSettings" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-50 overflow-hidden pb-safe flex flex-col max-h-[85vh]">
             <div class="w-14 h-1.5 bg-slate-200 rounded-full mx-auto mt-4 mb-2 shrink-0"></div>
             <div class="px-6 py-4 flex justify-between items-center bg-white z-10 sticky top-0">
-                <h3 class="text-xl font-black text-slate-800 tracking-tight">ตั้งค่า <span class="text-sm font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg ml-1">{{ currentCycleData.name }}</span></h3>
+                <h3 class="text-xl font-black text-slate-800 tracking-tight">ตั้งค่าการเงิน <span class="text-sm font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg ml-1">{{ currentCycleData.name }}</span></h3>
                 <button @click="showSettings = false" class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors active:scale-90">
                     <i class="ph-bold ph-x text-sm"></i>
                 </button>
             </div>
             
             <div class="p-6 space-y-6 overflow-y-auto">
-                <!-- Attendance Bonus -->
                 <div class="space-y-2">
-                    <label class="text-[13px] font-bold text-slate-700 pl-1">เบี้ยขยัน (Attendance Bonus)</label>
+                    <label class="text-[13px] font-bold text-slate-700 pl-1">เบี้ยขยันประจำเดือน (Attendance Bonus)</label>
                     <div class="relative">
-                        <select v-model.number="monthlySettings[selectedTab].attendanceBonus" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 outline-none focus:ring-2 focus:ring-indigo-500 text-[15px] font-bold font-sans-en text-slate-800 appearance-none cursor-pointer">
+                        <select v-model.number="getSettingsForCycle(selectedTab).attendanceBonus" class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-4 outline-none focus:ring-2 focus:ring-indigo-500 text-[15px] font-bold font-sans-en text-slate-800 appearance-none cursor-pointer">
                             <option value="0">0 THB</option>
                             <option value="600">600 THB</option>
                             <option value="800">800 THB</option>
@@ -391,23 +413,21 @@
                     </div>
                 </div>
 
-                <!-- Performance Bonus -->
                 <div class="space-y-2">
-                    <label class="text-[13px] font-bold text-slate-700 pl-1">ค่าผลงาน (Performance Bonus)</label>
+                    <label class="text-[13px] font-bold text-slate-700 pl-1">ค่าผลงาน/เงินพิเศษ (Performance Bonus)</label>
                     <div class="relative">
-                        <input type="number" min="0" max="3000" v-model.number="monthlySettings[selectedTab].performanceBonus" class="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-14 py-4 outline-none focus:ring-2 focus:ring-indigo-500 text-[15px] font-bold font-sans-en text-slate-800">
+                        <input type="number" min="0" v-model.number="getSettingsForCycle(selectedTab).performanceBonus" class="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-14 py-4 outline-none focus:ring-2 focus:ring-indigo-500 text-[15px] font-bold font-sans-en text-slate-800">
                         <span class="absolute inset-y-0 right-4 flex items-center text-slate-400 text-[13px] font-bold">THB</span>
                     </div>
                 </div>
 
-                <!-- SSO Toggle -->
                 <label class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 shadow-sm cursor-pointer active:scale-[0.98] transition-transform">
                     <div>
                         <p class="text-[14px] font-bold text-slate-800">หักประกันสังคม 5%</p>
                         <p class="text-[11px] text-slate-500 mt-0.5">สูงสุดไม่เกิน 750 บาท</p>
                     </div>
                     <div class="relative inline-block w-12 h-6 align-middle select-none">
-                        <input type="checkbox" v-model="monthlySettings[selectedTab].deductSSO" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300 z-10 m-0 p-0 top-0 left-0"/>
+                        <input type="checkbox" v-model="getSettingsForCycle(selectedTab).deductSSO" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 border-slate-300 appearance-none cursor-pointer transition-all duration-300 z-10 m-0 p-0 top-0 left-0"/>
                         <div class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer transition-all duration-300 m-0 p-0"></div>
                     </div>
                 </label>
@@ -417,10 +437,169 @@
                         บันทึกการตั้งค่า
                     </button>
                     <button @click="resetData" class="w-full bg-rose-50 text-rose-600 font-bold py-4 rounded-2xl transition-transform active:scale-[0.98] text-[15px] flex justify-center items-center">
-                        <i class="ph-bold ph-trash mr-2 text-lg"></i> ล้างข้อมูลแอปทั้งหมด
+                        <i class="ph-bold ph-trash mr-2 text-lg"></i> ล้างข้อมูลแอปทั้งหมด (Reset)
                     </button>
                 </div>
             </div>
+        </div>
+    </Transition>
+
+    <!-- Holiday Management Modal -->
+    <Transition name="fade">
+        <div v-if="showHolidaySettings" class="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-[2px]" @click="showHolidaySettings = false"></div>
+    </Transition>
+    <Transition name="bottom-sheet">
+        <div v-if="showHolidaySettings" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[2rem] shadow-2xl z-50 overflow-hidden pb-safe flex flex-col max-h-[90vh]">
+            <div class="w-14 h-1.5 bg-slate-200 rounded-full mx-auto mt-4 mb-2 shrink-0"></div>
+            <div class="px-6 py-4 flex justify-between items-center bg-white z-10 sticky top-0">
+                <h3 class="text-xl font-black text-slate-800 tracking-tight">วันหยุดนักขัตฤกษ์ <span class="text-sm font-semibold text-rose-600 bg-rose-50 px-2 py-1 rounded-lg ml-1">ปี {{ selectedYear + 543 }}</span></h3>
+                <button @click="showHolidaySettings = false" class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 transition-colors active:scale-90">
+                    <i class="ph-bold ph-x text-sm"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-4 overflow-y-auto">
+                
+                <div v-if="holidaysForSelectedYear.length === 0" class="text-center py-6 bg-slate-50 rounded-2xl border border-slate-100">
+                    <i class="ph-fill ph-calendar-x text-3xl text-slate-300 mb-2"></i>
+                    <p class="text-sm font-medium text-slate-500">ยังไม่มีวันหยุดในปีนี้</p>
+                </div>
+
+                <div v-for="h in holidaysForSelectedYear" :key="h.date" class="flex justify-between items-center bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm transition-all" :class="!h.active ? 'opacity-60 bg-slate-50' : ''">
+                    <div class="flex items-center gap-3">
+                        <!-- Toggle Switch -->
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" :checked="h.active" @change="toggleHolidayActive(h.date, $event.target.checked)" class="sr-only peer">
+                            <div class="w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                        
+                        <!-- Date Badge -->
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors" :class="h.active ? 'bg-rose-50 text-rose-500' : 'bg-slate-200 text-slate-400'">
+                            <span class="font-bold font-sans-en text-[13px]">{{ h.date.split('-')[2] }}</span>
+                        </div>
+                        
+                        <!-- Details -->
+                        <div>
+                            <p class="font-bold text-[13px] transition-colors" :class="h.active ? 'text-slate-800' : 'text-slate-400 line-through'">{{ h.name }}</p>
+                            <p class="text-[10px] text-slate-400 font-sans-en mt-0.5">{{ h.dateFormatted }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex gap-1 shrink-0">
+                        <button @click="editHoliday(h.date, h.name)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors">
+                            <i class="ph-bold ph-pencil-simple text-lg"></i>
+                        </button>
+                        <button @click="removeHoliday(h.date)" class="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                            <i class="ph-bold ph-trash text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Holiday Form -->
+                <div class="mt-6 pt-5 border-t border-slate-100 space-y-3">
+                    <div class="flex justify-between items-center">
+                        <label class="text-[13px] font-bold text-slate-800 flex items-center">
+                            <i class="ph-bold text-indigo-500 mr-1.5" :class="editingHolidayOldDate ? 'ph-pencil-simple' : 'ph-plus-circle'"></i> 
+                            {{ editingHolidayOldDate ? 'แก้ไขวันหยุด' : 'เพิ่มวันหยุดใหม่' }}
+                        </label>
+                        <button v-if="editingHolidayOldDate" @click="cancelEditHoliday" class="text-[11px] text-slate-500 hover:text-slate-700 font-bold px-2.5 py-1 bg-slate-100 rounded-md transition-colors">ยกเลิก</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="date" v-model="newHolidayDate" class="w-[120px] bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 font-sans-en text-[13px] font-bold outline-none focus:border-indigo-500 text-slate-700">
+                        <input type="text" v-model="newHolidayName" placeholder="ระบุชื่อวันหยุด" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-[14px] outline-none focus:border-indigo-500 text-slate-700">
+                    </div>
+                    <button @click="addHoliday" class="w-full bg-indigo-50 text-indigo-600 font-bold py-3.5 rounded-xl hover:bg-indigo-100 transition-colors active:scale-[0.98] mt-2 shadow-sm text-[14px]">
+                        {{ editingHolidayOldDate ? 'บันทึกการแก้ไข' : 'บันทึกวันหยุด' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Transition>
+
+    <!-- First Time Onboarding Modal -->
+    <Transition name="fade">
+        <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/60 z-[60] backdrop-blur-sm flex items-center justify-center p-5">
+            <div class="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl relative transform transition-all">
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-indigo-100 rounded-full blur-3xl opacity-50"></div>
+                <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-100 rounded-full blur-3xl opacity-50"></div>
+                
+                <div class="p-8 relative z-10 flex flex-col items-center text-center">
+                    <div class="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-blue-500 rounded-3xl flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white mb-6 transform -rotate-3">
+                        <i class="ph-fill ph-calendar-check text-4xl"></i>
+                    </div>
+                    
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight mb-2">CorpHR</h2>
+                    <p class="text-[13px] text-slate-500 font-medium mb-8 leading-relaxed">
+                        แอปพลิเคชันคำนวณเงินเดือน โอที และกะทำงาน<br>อิงตามกฎหมายแรงงานที่แม่นยำที่สุด
+                    </p>
+                    
+                    <div class="space-y-4 w-full text-left bg-slate-50 p-5 rounded-3xl border border-slate-100">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5"><i class="ph-bold ph-calendar-blank"></i></div>
+                            <div>
+                                <p class="text-[13px] font-bold text-slate-800">ปฏิทินแบบ 12 เดือน</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">เลือกปีได้ล่วงหน้า วางแผนง่ายขึ้น</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5"><i class="ph-bold ph-coins"></i></div>
+                            <div>
+                                <p class="text-[13px] font-bold text-slate-800">คำนวณ OT ถูกต้องเป๊ะ</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">คูณเรท 1.5x, 2x, 3x อัตโนมัติ</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5"><i class="ph-bold ph-calendar-star"></i></div>
+                            <div>
+                                <p class="text-[13px] font-bold text-slate-800">จัดการวันหยุดเองได้</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">เพิ่ม, ลบ, เปิด, ปิด วันหยุดได้อิสระ</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button @click="finishOnboarding" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-transform active:scale-[0.98] shadow-lg shadow-indigo-600/20 text-[15px] mt-8">
+                        เริ่มต้นใช้งาน
+                    </button>
+                </div>
+            </div>
+        </div>
+    </Transition>
+
+    <!-- Add to Home Screen (A2HS) Prompt Modal -->
+    <Transition name="bottom-sheet">
+        <div v-if="showA2HSPrompt" class="fixed bottom-4 left-4 right-4 bg-slate-800 text-white p-5 rounded-[2rem] shadow-2xl z-[55] flex flex-col gap-3 pb-safe border border-slate-700">
+            <button @click="dismissA2HS" class="absolute top-4 right-4 w-8 h-8 bg-slate-700 rounded-full flex items-center justify-center text-slate-300 hover:text-white transition-colors">
+                <i class="ph-bold ph-x text-sm"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-[1rem] flex items-center justify-center shadow-inner">
+                    <i class="ph-fill ph-app-window text-2xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-[15px]">ติดตั้งแอปนี้บนมือถือ</h4>
+                    <p class="text-[12px] text-slate-300 mt-0.5">เพื่อการเข้าใช้งานที่รวดเร็วในครั้งถัดไป</p>
+                </div>
+            </div>
+            
+            <!-- Instructions for iOS -->
+            <div v-if="isIOS" class="bg-slate-700/50 rounded-2xl p-4 mt-2">
+                <p class="text-[13px] leading-relaxed">
+                    1. แตะไอคอน <i class="ph-bold ph-export text-blue-400 mx-1 inline-block align-middle text-lg"></i> (Share) บนแถบเครื่องมือของ Safari<br>
+                    2. เลื่อนลงและเลือก <span class="font-bold text-white">"เพิ่มไปยังหน้าจอโฮม"</span> <br>(Add to Home Screen)
+                </p>
+            </div>
+            
+            <!-- Instructions for Android -->
+            <div v-if="isAndroid" class="bg-slate-700/50 rounded-2xl p-4 mt-2">
+                <p class="text-[13px] leading-relaxed">
+                    1. แตะไอคอน <i class="ph-bold ph-dots-three-vertical text-slate-300 mx-1 inline-block align-middle text-lg"></i> เมนู มุมขวาบนของ Chrome<br>
+                    2. เลือก <span class="font-bold text-white">"เพิ่มลงในหน้าจอหลัก"</span> <br>(Add to Home screen)
+                </p>
+            </div>
+            
+            <button @click="dismissA2HS" class="w-full bg-white/10 hover:bg-white/20 text-white font-bold py-3.5 rounded-xl transition-colors mt-1 text-[13px]">
+                เข้าใจแล้ว, ซ่อนข้อความนี้
+            </button>
         </div>
     </Transition>
 
@@ -439,129 +618,335 @@
             const shiftAllowanceNoOT = 70;
             const shiftAllowanceWithOT = 100;
 
-            const holidays2026 = {
-                '2026-05-01': 'วันแรงงานแห่งชาติ',
-                '2026-06-01': 'ชดเชยวันวิสาขบูชา',
-                '2026-06-02': 'ชดเชยวันเฉลิมฯ พระราชินี'
-            };
-
-            const cycles = [
-                { id: 'apr', name: 'เมษายน', rangeStr: '22 เม.ย. - 25 เม.ย.', payday: '5 พ.ค. 26', start: '2026-04-22', end: '2026-04-25' },
-                { id: 'may', name: 'พฤษภาคม', rangeStr: '26 เม.ย. - 25 พ.ค.', payday: '5 มิ.ย. 26', start: '2026-04-26', end: '2026-05-25' },
-                { id: 'jun', name: 'มิถุนายน', rangeStr: '26 พ.ค. - 25 มิ.ย.', payday: '5 ก.ค. 26', start: '2026-05-26', end: '2026-06-25' }
-            ];
-
-            // State
-            const selectedTab = ref('apr');
+            const currentYearValue = new Date().getFullYear();
+            const availableYears = [2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031];
+            const selectedYear = ref(currentYearValue);
+            
+            const selectedTab = ref(`${currentYearValue}-01`); 
             const showSettings = ref(false);
-            const allDays = reactive([]);
-            const monthlySettings = reactive({
-                apr: { attendanceBonus: 0, performanceBonus: 0, deductSSO: true },
-                may: { attendanceBonus: 0, performanceBonus: 0, deductSSO: true },
-                jun: { attendanceBonus: 0, performanceBonus: 0, deductSSO: true }
+            const showHolidaySettings = ref(false);
+
+            // Onboarding & A2HS State
+            const showOnboarding = ref(false);
+            const showA2HSPrompt = ref(false);
+            const isIOS = ref(false);
+            const isAndroid = ref(false);
+
+            // Database State
+            const state = reactive({
+                records: {}, 
+                monthlySettings: {}, 
+                holidays: {} // Structure updated to: { 'YYYY-MM-DD': { name: 'Name', active: true/false } }
             });
 
-            // Modal State
+            // Local State
+            const newHolidayDate = ref('');
+            const newHolidayName = ref('');
+            const editingHolidayOldDate = ref(null);
+
             const activeDayModal = ref(null);
             const modalWorkHours = ref(0);
             const modalKpi = ref(0);
+            const modalShift = ref('Day');
 
-            // Helpers
-            const getShiftForDate = (dateStr) => {
-                const d = new Date(dateStr);
-                if (d >= new Date('2026-04-22') && d <= new Date('2026-04-25')) return 'None';
-                if (d >= new Date('2026-04-26') && d <= new Date('2026-05-02')) return 'Night';
-                if (d >= new Date('2026-05-03') && d <= new Date('2026-05-16')) return 'Day';
-                if (d >= new Date('2026-05-17') && d <= new Date('2026-05-30')) return 'Night';
-                if (d >= new Date('2026-05-31') && d <= new Date('2026-06-14')) return 'Day';
-                if (d >= new Date('2026-06-15')) return 'Night';
-                return 'None';
+            // --- Helper Functions ---
+            const createDate = (str) => new Date(str + 'T00:00:00');
+
+            // Helpers for new holiday object structure
+            const isHolidayActive = (dateStr) => {
+                const h = state.holidays[dateStr];
+                if (!h) return false;
+                return typeof h === 'string' ? true : h.active !== false;
             };
 
-            const generateDays = () => {
-                let current = new Date('2026-04-22');
-                const end = new Date('2026-06-25');
-                
-                while (current <= end) {
-                    const dateStr = current.toISOString().split('T')[0];
-                    const dayOfWeek = current.getDay(); 
-                    const isSunday = dayOfWeek === 0;
-                    const isHoliday = !!holidays2026[dateStr];
-                    
-                    let cycleId = '';
-                    if (current <= new Date('2026-04-25')) cycleId = 'apr';
-                    else if (current <= new Date('2026-05-25')) cycleId = 'may';
-                    else cycleId = 'jun';
-
-                    allDays.push({
-                        dateStr: dateStr,
-                        cycleId: cycleId,
-                        isSunday: isSunday,
-                        isHoliday: isHoliday,
-                        holidayName: holidays2026[dateStr] || '',
-                        shift: getShiftForDate(dateStr),
-                        isWorking: false, 
-                        workHours: 8,
-                        kpi: 0 
-                    });
-
-                    current.setDate(current.getDate() + 1);
-                }
+            const getHolidayName = (dateStr) => {
+                const h = state.holidays[dateStr];
+                if (!h) return '';
+                return typeof h === 'string' ? h : h.name;
             };
 
             onMounted(() => {
-                const savedDays = localStorage.getItem('payroll_allDays_v2');
-                const savedSettings = localStorage.getItem('payroll_monthlySettings_v2');
-
-                if (savedDays) {
-                    const parsedDays = JSON.parse(savedDays);
-                    allDays.length = 0; 
-                    allDays.push(...parsedDays); 
-                } else {
-                    generateDays(); 
+                // Check Device OS for A2HS
+                const ua = navigator.userAgent;
+                if (/iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+                    isIOS.value = true;
+                } else if (/android/i.test(ua)) {
+                    isAndroid.value = true;
                 }
 
-                if (savedSettings) {
-                    Object.assign(monthlySettings, JSON.parse(savedSettings));
+                // Check UI States in LocalStorage
+                const hasSeenOnboarding = localStorage.getItem('payroll_onboarding_v6');
+                const hasDismissedA2HS = localStorage.getItem('payroll_a2hs_v6');
+
+                if (!hasSeenOnboarding) {
+                    showOnboarding.value = true;
+                } else if (!hasDismissedA2HS && (isIOS.value || isAndroid.value)) {
+                    setTimeout(() => { showA2HSPrompt.value = true; }, 1500);
+                }
+
+                const savedRecords = localStorage.getItem('payroll_records_v5');
+                const savedSettings = localStorage.getItem('payroll_settings_v5');
+                const savedHolidays = localStorage.getItem('payroll_holidays_v6'); // Bumped key to trigger migration
+
+                // List of strings, we'll convert them to objects during initialization
+                const defaultHolidaysList = {
+                    '2024-01-01': 'วันขึ้นปีใหม่', '2024-02-10': 'วันตรุษจีน', '2024-02-26': 'ชดเชยวันมาฆบูชา',
+                    '2024-04-13': 'วันสงกรานต์', '2024-04-15': 'วันสงกรานต์', '2024-04-16': 'ชดเชยวันสงกรานต์',
+                    '2024-05-01': 'วันแรงงานแห่งชาติ', '2024-06-03': 'วันเฉลิมฯ พระราชินี', '2024-07-22': 'ชดเชยวันอาสาฬหบูชา',
+                    '2024-07-29': 'ชดเชยวันเฉลิมฯ ร.10', '2024-08-12': 'วันแม่แห่งชาติ', '2024-10-14': 'ชดเชยวันนวมินทรมหาราช',
+                    '2024-12-05': 'วันพ่อแห่งชาติ', '2024-12-31': 'วันสิ้นปี',
+                    '2026-01-01': 'วันขึ้นปีใหม่', '2026-03-03': 'วันมาฆบูชา', '2026-04-06': 'วันจักรี',
+                    '2026-04-13': 'วันสงกรานต์', '2026-04-14': 'วันสงกรานต์', '2026-04-15': 'วันสงกรานต์',
+                    '2026-05-01': 'วันแรงงานแห่งชาติ', '2026-06-01': 'ชดเชยวันวิสาขบูชา', '2026-06-03': 'วันเฉลิมฯ พระราชินี',
+                    '2026-07-28': 'วันเฉลิมฯ ร.10', '2026-07-29': 'วันอาสาฬหบูชา', '2026-08-12': 'วันแม่แห่งชาติ',
+                    '2026-10-13': 'วันนวมินทรมหาราช', '2026-10-23': 'วันปิยมหาราช', '2026-12-07': 'ชดเชยวันพ่อแห่งชาติ',
+                    '2026-12-31': 'วันสิ้นปี', '2027-01-01': 'วันขึ้นปีใหม่', '2027-02-22': 'ชดเชยวันมาฆบูชา',
+                    '2027-04-06': 'วันจักรี', '2027-04-13': 'วันสงกรานต์', '2027-04-14': 'วันสงกรานต์',
+                    '2027-04-15': 'วันสงกรานต์', '2027-05-03': 'ชดเชยวันแรงงานแห่งชาติ', '2027-05-20': 'วันวิสาขบูชา',
+                    '2027-06-03': 'วันเฉลิมฯ พระราชินี', '2027-07-19': 'ชดเชยวันอาสาฬหบูชา', '2027-07-28': 'วันเฉลิมฯ ร.10',
+                    '2027-08-12': 'วันแม่แห่งชาติ', '2027-10-13': 'วันนวมินทรมหาราช', '2027-10-25': 'ชดเชยวันปิยมหาราช',
+                    '2027-12-06': 'ชดเชยวันพ่อแห่งชาติ', '2027-12-31': 'วันสิ้นปี', '2028-01-01': 'วันขึ้นปีใหม่',
+                    '2028-02-10': 'วันมาฆบูชา', '2028-04-06': 'วันจักรี', '2028-04-13': 'วันสงกรานต์',
+                    '2028-04-14': 'วันสงกรานต์', '2028-04-15': 'วันสงกรานต์', '2028-05-01': 'วันแรงงานแห่งชาติ',
+                    '2028-05-08': 'วันวิสาขบูชา', '2028-06-05': 'ชดเชยวันเฉลิมฯ พระราชินี', '2028-07-06': 'วันอาสาฬหบูชา',
+                    '2028-07-28': 'วันเฉลิมฯ ร.10', '2028-08-14': 'ชดเชยวันแม่แห่งชาติ', '2028-10-13': 'วันนวมินทรมหาราช',
+                    '2028-10-23': 'วันปิยมหาราช', '2028-12-05': 'วันพ่อแห่งชาติ', '2029-01-01': 'วันขึ้นปีใหม่',
+                    '2029-01-02': 'ชดเชยวันสิ้นปี', '2029-02-28': 'วันมาฆบูชา', '2029-04-06': 'วันจักรี',
+                    '2029-04-13': 'วันสงกรานต์', '2029-04-14': 'วันสงกรานต์', '2029-04-16': 'ชดเชยวันสงกรานต์',
+                    '2029-05-01': 'วันแรงงานแห่งชาติ', '2029-05-28': 'วันวิสาขบูชา', '2029-06-04': 'ชดเชยวันเฉลิมฯ พระราชินี',
+                    '2029-07-25': 'วันอาสาฬหบูชา', '2029-07-30': 'ชดเชยวันเฉลิมฯ ร.10', '2029-08-13': 'ชดเชยวันแม่แห่งชาติ',
+                    '2029-10-15': 'ชดเชยวันนวมินทรมหาราช', '2029-10-23': 'วันปิยมหาราช', '2029-12-05': 'วันพ่อแห่งชาติ',
+                    '2029-12-31': 'วันสิ้นปี', '2030-01-01': 'วันขึ้นปีใหม่', '2030-02-18': 'วันมาฆบูชา',
+                    '2030-04-08': 'ชดเชยวันจักรี', '2030-04-15': 'วันสงกรานต์', '2030-04-16': 'ชดเชยวันสงกรานต์',
+                    '2030-04-17': 'ชดเชยวันสงกรานต์', '2030-05-01': 'วันแรงงานแห่งชาติ', '2030-05-17': 'วันวิสาขบูชา',
+                    '2030-06-03': 'วันเฉลิมฯ พระราชินี', '2030-07-15': 'ชดเชยวันอาสาฬหบูชา', '2030-07-29': 'ชดเชยวันเฉลิมฯ ร.10',
+                    '2030-08-12': 'วันแม่แห่งชาติ', '2030-10-14': 'ชดเชยวันนวมินทรมหาราช', '2030-10-23': 'วันปิยมหาราช',
+                    '2030-12-05': 'วันพ่อแห่งชาติ', '2030-12-31': 'วันสิ้นปี', '2031-01-01': 'วันขึ้นปีใหม่',
+                    '2031-03-08': 'วันมาฆบูชา', '2031-04-06': 'วันจักรี', '2031-04-13': 'วันสงกรานต์',
+                    '2031-04-14': 'วันสงกรานต์', '2031-04-15': 'วันสงกรานต์', '2031-05-01': 'วันแรงงานแห่งชาติ',
+                    '2031-05-06': 'วันวิสาขบูชา', '2031-06-03': 'วันเฉลิมฯ พระราชินี', '2031-07-04': 'วันอาสาฬหบูชา',
+                    '2031-07-28': 'วันเฉลิมฯ ร.10', '2031-08-12': 'วันแม่แห่งชาติ', '2031-10-13': 'วันนวมินทรมหาราช',
+                    '2031-10-23': 'วันปิยมหาราช', '2031-12-05': 'วันพ่อแห่งชาติ', '2031-12-31': 'วันสิ้นปี'
+                };
+
+                const defaultHolidays = {};
+                for(let date in defaultHolidaysList) {
+                    defaultHolidays[date] = { name: defaultHolidaysList[date], active: true };
+                }
+
+                if (savedRecords) Object.assign(state.records, JSON.parse(savedRecords));
+                if (savedSettings) Object.assign(state.monthlySettings, JSON.parse(savedSettings));
+                
+                // Load & Migrate old holiday formats if needed
+                const legacyHolidays = localStorage.getItem('payroll_holidays_v5');
+                if (savedHolidays || legacyHolidays) {
+                    const dataToParse = savedHolidays || legacyHolidays;
+                    const parsed = JSON.parse(dataToParse);
+                    
+                    // Convert old string format to object format
+                    for (let key in parsed) {
+                        if (typeof parsed[key] === 'string') {
+                            parsed[key] = { name: parsed[key], active: true };
+                        }
+                    }
+                    Object.assign(state.holidays, parsed);
+                    
+                    // Inject 2024 defaults if missing
+                    if (Object.keys(parsed).length <= 15 || !parsed['2024-01-01']) {
+                        Object.assign(state.holidays, defaultHolidays);
+                    }
+                } else {
+                    Object.assign(state.holidays, defaultHolidays);
+                }
+
+                // Auto Select Current Real-world Cycle
+                const now = new Date();
+                const offset = now.getTimezoneOffset() * 60000;
+                const localISODate = (new Date(now - offset)).toISOString().split('T')[0];
+                
+                if (availableYears.includes(now.getFullYear())) {
+                    selectedYear.value = now.getFullYear();
+                }
+                
+                const c = cycles.value.find(cyc => localISODate >= cyc.start && localISODate <= cyc.end);
+                if (c) {
+                    selectedTab.value = c.id;
+                } else {
+                    selectedTab.value = `${selectedYear.value}-01`;
                 }
             });
 
-            watch(allDays, (newVal) => {
-                localStorage.setItem('payroll_allDays_v2', JSON.stringify(newVal));
-            }, { deep: true });
-
-            watch(monthlySettings, (newVal) => {
-                localStorage.setItem('payroll_monthlySettings_v2', JSON.stringify(newVal));
-            }, { deep: true });
-
-            const resetData = () => {
-                if (confirm('คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลแอปทั้งหมดและกลับเป็นค่าเริ่มต้น?')) {
-                    localStorage.removeItem('payroll_allDays_v2');
-                    localStorage.removeItem('payroll_monthlySettings_v2');
-                    allDays.length = 0;
-                    generateDays();
-                    Object.assign(monthlySettings, {
-                        apr: { attendanceBonus: 0, performanceBonus: 0, deductSSO: true },
-                        may: { attendanceBonus: 0, performanceBonus: 0, deductSSO: true },
-                        jun: { attendanceBonus: 0, performanceBonus: 0, deductSSO: true }
-                    });
-                    showSettings.value = false;
+            // UI Triggers
+            const finishOnboarding = () => {
+                localStorage.setItem('payroll_onboarding_v6', 'true');
+                showOnboarding.value = false;
+                
+                if (!localStorage.getItem('payroll_a2hs_v6') && (isIOS.value || isAndroid.value)) {
+                    setTimeout(() => { showA2HSPrompt.value = true; }, 1000);
                 }
             };
 
-            // Computed
-            const currentCycleData = computed(() => cycles.find(c => c.id === selectedTab.value) || {});
+            const dismissA2HS = () => {
+                localStorage.setItem('payroll_a2hs_v6', 'true');
+                showA2HSPrompt.value = false;
+            };
+
+            // Watchers for LocalStorage
+            watch(() => state.records, (val) => localStorage.setItem('payroll_records_v5', JSON.stringify(val)), { deep: true });
+            watch(() => state.monthlySettings, (val) => localStorage.setItem('payroll_settings_v5', JSON.stringify(val)), { deep: true });
+            watch(() => state.holidays, (val) => localStorage.setItem('payroll_holidays_v6', JSON.stringify(val)), { deep: true }); // New version tag
+
+            watch(selectedYear, (newYear) => {
+                if (selectedTab.value !== 'summary') {
+                    const parts = selectedTab.value.split('-');
+                    if (parts.length === 2) {
+                        selectedTab.value = `${newYear}-${parts[1]}`;
+                    }
+                }
+            });
+
+            const resetData = () => {
+                if (confirm('คุณแน่ใจหรือไม่? ข้อมูลทั้งหมดรวมถึงวันหยุดที่ตั้งค่าไว้จะหายไป และกลับเป็นค่าเริ่มต้น')) {
+                    localStorage.removeItem('payroll_records_v5');
+                    localStorage.removeItem('payroll_settings_v5');
+                    localStorage.removeItem('payroll_holidays_v5');
+                    localStorage.removeItem('payroll_holidays_v6');
+                    localStorage.removeItem('payroll_onboarding_v6');
+                    localStorage.removeItem('payroll_a2hs_v6');
+                    location.reload(); 
+                }
+            };
+
+            // --- Holiday Management Logic ---
+            const holidaysForSelectedYear = computed(() => {
+                return Object.keys(state.holidays)
+                    .filter(d => d.startsWith(selectedYear.value.toString()))
+                    .sort((a, b) => createDate(a) - createDate(b))
+                    .map(d => ({
+                        date: d,
+                        dateFormatted: formatDateShort(d),
+                        name: getHolidayName(d),
+                        active: isHolidayActive(d)
+                    }));
+            });
+
+            const toggleHolidayActive = (dateStr, isActive) => {
+                if (state.holidays[dateStr]) {
+                    if (typeof state.holidays[dateStr] === 'string') {
+                        state.holidays[dateStr] = { name: state.holidays[dateStr], active: isActive };
+                    } else {
+                        state.holidays[dateStr].active = isActive;
+                    }
+                }
+            };
+
+            const addHoliday = () => {
+                if (newHolidayDate.value && newHolidayName.value) {
+                    if (editingHolidayOldDate.value && editingHolidayOldDate.value !== newHolidayDate.value) {
+                        delete state.holidays[editingHolidayOldDate.value];
+                    }
+                    state.holidays[newHolidayDate.value] = { name: newHolidayName.value, active: true };
+                    
+                    newHolidayDate.value = '';
+                    newHolidayName.value = '';
+                    editingHolidayOldDate.value = null;
+                }
+            };
+
+            const editHoliday = (date, name) => {
+                editingHolidayOldDate.value = date;
+                newHolidayDate.value = date;
+                newHolidayName.value = name;
+            };
+
+            const cancelEditHoliday = () => {
+                editingHolidayOldDate.value = null;
+                newHolidayDate.value = '';
+                newHolidayName.value = '';
+            };
+
+            const removeHoliday = (dateStr) => {
+                if(confirm('ต้องการลบวันหยุดนี้ทิ้งถาวรหรือไม่?\n(คุณสามารถกด ปิดสวิตช์ แทนการลบได้)')) {
+                    delete state.holidays[dateStr];
+                    if (editingHolidayOldDate.value === dateStr) cancelEditHoliday();
+                }
+            };
+
+            // --- Core Cycles Generator ---
+            const cycles = computed(() => {
+                const result = [];
+                const monthNamesFull = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                const monthNamesShort = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                
+                for (let m = 1; m <= 12; m++) {
+                    let startYear = selectedYear.value;
+                    let startMonth = m - 1;
+                    if (startMonth === 0) { startMonth = 12; startYear--; }
+                    
+                    let startStr = `${startYear}-${String(startMonth).padStart(2, '0')}-26`;
+                    let endStr = `${selectedYear.value}-${String(m).padStart(2, '0')}-25`;
+                    
+                    let payYear = selectedYear.value;
+                    let payMonth = m + 1;
+                    if (payMonth === 13) { payMonth = 1; payYear++; }
+                    let payStr = `05 ${monthNamesShort[payMonth-1]} ${String(payYear+543).slice(-2)}`;
+                    
+                    result.push({
+                        id: `${selectedYear.value}-${String(m).padStart(2, '0')}`,
+                        name: monthNamesFull[m-1],
+                        rangeStr: `26 ${monthNamesShort[startMonth-1]} - 25 ${monthNamesShort[m-1]}`,
+                        payday: payStr,
+                        start: startStr,
+                        end: endStr
+                    });
+                }
+                return result;
+            });
+
+            const currentCycleData = computed(() => cycles.value.find(c => c.id === selectedTab.value) || {});
             
+            // --- Settings Getter ---
+            const getSettingsForCycle = (cycleId) => {
+                if (cycleId === 'summary') return { attendanceBonus: 0, performanceBonus: 0, deductSSO: true };
+                if (!state.monthlySettings[cycleId]) {
+                    state.monthlySettings[cycleId] = { attendanceBonus: 0, performanceBonus: 0, deductSSO: true };
+                }
+                return state.monthlySettings[cycleId];
+            };
+
+            // --- Calendar Grid ---
             const calendarGrid = computed(() => {
                 if(selectedTab.value === 'summary') return [];
-                const cycleDays = allDays.filter(d => d.cycleId === selectedTab.value);
-                if(cycleDays.length === 0) return [];
+                const cycle = cycles.value.find(c => c.id === selectedTab.value);
+                if(!cycle) return [];
 
-                const firstDay = new Date(cycleDays[0].dateStr);
+                let current = createDate(cycle.start);
+                const end = createDate(cycle.end);
+                const cycleDaysArr = [];
+                
+                while (current <= end) {
+                    const dateStr = current.toISOString().split('T')[0];
+                    const record = state.records[dateStr] || {};
+                    
+                    cycleDaysArr.push({
+                        dateStr: dateStr,
+                        isSunday: current.getDay() === 0,
+                        isHoliday: isHolidayActive(dateStr),
+                        holidayName: getHolidayName(dateStr),
+                        shift: record.shift || 'Day',
+                        isWorking: record.isWorking || false,
+                        workHours: record.workHours || 8,
+                        kpi: record.kpi || 0
+                    });
+                    
+                    current.setDate(current.getDate() + 1);
+                }
+
+                const firstDay = createDate(cycleDaysArr[0].dateStr);
                 const startPadding = firstDay.getDay(); 
 
                 let grid = Array(startPadding).fill({ empty: true });
-                grid = grid.concat(cycleDays);
+                grid = grid.concat(cycleDaysArr);
                 
                 const endPadding = (7 - (grid.length % 7)) % 7;
                 grid = grid.concat(Array(endPadding).fill({ empty: true }));
@@ -569,12 +954,9 @@
                 return grid;
             });
 
-            const getAvailableHours = (day) => {
-                if (!day) return [];
-                return [8, 10]; 
-            };
+            const getAvailableHours = () => [8, 10]; 
 
-            // Touch / Press Logic
+            // --- Touch / Press Logic ---
             let pressTimer = null;
             let isLongPressAction = false;
             let touchStartY = 0;
@@ -619,19 +1001,26 @@
                 if (navigator.vibrate) navigator.vibrate(20);
             };
 
-            // Interactions
+            // --- User Interactions ---
             const toggleWorkStatus = (day) => {
                 const maxHrs = 10; 
+                const dateStr = day.dateStr;
                 
-                if (!day.isWorking) {
-                    day.isWorking = true;
-                    day.workHours = 8;
-                } else if (day.isWorking && day.workHours === 8) {
-                    day.workHours = maxHrs;
+                if (!state.records[dateStr]) {
+                    state.records[dateStr] = { isWorking: false, workHours: 8, kpi: 0, shift: day.shift };
+                }
+                
+                const record = state.records[dateStr];
+                
+                if (!record.isWorking) {
+                    record.isWorking = true;
+                    record.workHours = 8;
+                } else if (record.isWorking && record.workHours === 8) {
+                    record.workHours = maxHrs;
                 } else {
-                    day.isWorking = false;
-                    day.workHours = 8;
-                    day.kpi = 0; 
+                    record.isWorking = false;
+                    record.workHours = 8;
+                    record.kpi = 0; 
                 }
             };
 
@@ -639,6 +1028,7 @@
                 activeDayModal.value = day;
                 modalWorkHours.value = day.isWorking ? day.workHours : 0;
                 modalKpi.value = day.kpi || 0;
+                modalShift.value = day.shift || 'Day';
             };
 
             const closeModal = () => {
@@ -653,20 +1043,27 @@
 
             const saveModal = () => {
                 if (activeDayModal.value) {
+                    const dateStr = activeDayModal.value.dateStr;
+                    if (!state.records[dateStr]) {
+                        state.records[dateStr] = { isWorking: false, workHours: 8, kpi: 0, shift: modalShift.value };
+                    }
+                    const record = state.records[dateStr];
+                    record.shift = modalShift.value;
+
                     if (modalWorkHours.value === 0) {
-                        activeDayModal.value.isWorking = false;
-                        activeDayModal.value.workHours = 8;
-                        activeDayModal.value.kpi = 0;
+                        record.isWorking = false;
+                        record.workHours = 8;
+                        record.kpi = 0;
                     } else {
-                        activeDayModal.value.isWorking = true;
-                        activeDayModal.value.workHours = modalWorkHours.value;
-                        activeDayModal.value.kpi = modalKpi.value || 0;
+                        record.isWorking = true;
+                        record.workHours = modalWorkHours.value;
+                        record.kpi = modalKpi.value || 0;
                     }
                 }
                 closeModal();
             };
 
-            // Calculation Core
+            // --- Pay Calculation Core ---
             const _calcPay = (day, isWorking, workHours, kpi) => {
                 let wageOT = 0;
                 let basePortion = 0; 
@@ -715,26 +1112,50 @@
 
             const modalPreviewPay = computed(() => {
                 if (!activeDayModal.value) return { wageOT:0, food:0, shift:0, kpi:0, total:0 };
-                return _calcPay(activeDayModal.value, modalWorkHours.value > 0, modalWorkHours.value, modalKpi.value || 0);
+                const tempDay = { 
+                    ...activeDayModal.value, 
+                    shift: modalShift.value,
+                    isHoliday: isHolidayActive(activeDayModal.value.dateStr) 
+                };
+                return _calcPay(tempDay, modalWorkHours.value > 0, modalWorkHours.value, modalKpi.value || 0);
             });
 
             const getCycleTotals = (cycleId) => {
-                const daysInCycle = allDays.filter(d => d.cycleId === cycleId);
-                const settings = monthlySettings[cycleId];
+                const cycle = cycles.value.find(c => c.id === cycleId);
+                if (!cycle) return { baseAndOT: 0, allowancesAndBonus: 0, deductions: 0, netPay: 0 };
+                
+                let current = createDate(cycle.start);
+                const end = createDate(cycle.end);
+                
+                const settings = getSettingsForCycle(cycleId);
                 
                 let baseAndOT = 0;
                 let allowancesAndBonus = settings.attendanceBonus + (settings.performanceBonus || 0);
                 let totalBaseForSSO = 0;
 
-                daysInCycle.forEach(day => {
-                    const pay = calculateDailyPay(day);
+                while(current <= end) {
+                    const dateStr = current.toISOString().split('T')[0];
+                    const record = state.records[dateStr] || {};
+                    
+                    const dayObj = {
+                        dateStr,
+                        isSunday: current.getDay() === 0,
+                        isHoliday: isHolidayActive(dateStr),
+                        shift: record.shift || 'Day',
+                        isWorking: record.isWorking || false,
+                        workHours: record.workHours || 8,
+                        kpi: record.kpi || 0
+                    };
+
+                    const pay = calculateDailyPay(dayObj);
                     baseAndOT += pay.wageOT;
                     allowancesAndBonus += (pay.food + pay.shift + pay.kpi);
                     
-                    if (day.isWorking || day.isHoliday) {
+                    if (dayObj.isWorking || dayObj.isHoliday) {
                         totalBaseForSSO += pay.basePortion;
                     }
-                });
+                    current.setDate(current.getDate() + 1);
+                }
 
                 let deductions = 0;
                 if (settings.deductSSO) {
@@ -754,18 +1175,18 @@
                 return getCycleTotals(selectedTab.value);
             });
 
-            const quarterlySummary = computed(() => {
+            const yearlySummary = computed(() => {
                 let grandIncome = 0;
                 let grandDeduction = 0;
-                ['apr', 'may', 'jun'].forEach(cId => {
-                    const totals = getCycleTotals(cId);
+                cycles.value.forEach(c => {
+                    const totals = getCycleTotals(c.id);
                     grandIncome += (totals.baseAndOT + totals.allowancesAndBonus);
                     grandDeduction += totals.deductions;
                 });
                 return { grandIncome, grandDeduction, grandNetPay: grandIncome - grandDeduction };
             });
 
-            // UI Render Helpers
+            // --- UI Render Helpers ---
             const getCellClass = (day) => {
                 if(day.empty) return 'cell-empty';
                 if(!day.isWorking) {
@@ -790,25 +1211,30 @@
 
             // Formatters
             const formatMoney = (val) => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val);
+            const getDateNumber = (dateStr) => createDate(dateStr).getDate();
             
-            const getDateNumber = (dateStr) => {
-                return new Date(dateStr).getDate();
+            const formatDateShort = (dateStr) => {
+                const d = createDate(dateStr);
+                const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
             };
 
             const formatDateFull = (dateStr) => {
-                const d = new Date(dateStr);
+                const d = createDate(dateStr);
                 const days = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
                 const months = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
                 return `วัน${days[d.getDay()]}ที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
             };
 
             return {
-                cycles, selectedTab, calendarGrid, currentCycleData,
-                monthlySettings, showSettings,
-                activeDayModal, modalWorkHours, modalKpi,
+                availableYears, selectedYear, cycles, selectedTab, calendarGrid, currentCycleData,
+                showSettings, showHolidaySettings, getSettingsForCycle,
+                showOnboarding, showA2HSPrompt, isIOS, isAndroid, finishOnboarding, dismissA2HS,
+                holidaysForSelectedYear, newHolidayDate, newHolidayName, editingHolidayOldDate, addHoliday, editHoliday, cancelEditHoliday, removeHoliday, toggleHolidayActive,
+                activeDayModal, modalWorkHours, modalKpi, modalShift,
                 onCellClick, onTouchStart, onTouchEnd, onTouchMove,
                 openModal, closeModal, saveModal, updateModalHours, getAvailableHours,
-                calculateDailyPay, modalPreviewPay, cycleTotal, getCycleTotals, quarterlySummary,
+                calculateDailyPay, modalPreviewPay, cycleTotal, getCycleTotals, yearlySummary,
                 getCellClass, getDateColor, getStatusText, formatMoney, getDateNumber, formatDateFull,
                 resetData
             };
