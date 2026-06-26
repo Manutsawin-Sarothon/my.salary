@@ -6,681 +6,645 @@
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="CorpHR">
-    <meta name="theme-color" content="#f8fafc">
+    <meta name="apple-mobile-web-app-title" content="CorpHR Portal">
+    <meta name="theme-color" content="#ffffff">
     
-    <title>Modern Payroll App - Full Year</title>
+    <title>CorpHR - Enterprise Payroll Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         [v-cloak] { display: none !important; }
 
         body { 
             font-family: 'Sarabun', sans-serif; 
-            background-color: #f8fafc; 
-            color: #0f172a; 
+            background-color: #f1f5f9; /* Slate 100 for desktop background */
+            color: #1e293b; /* Slate 800 */
             -webkit-tap-highlight-color: transparent;
             -webkit-touch-callout: none;
             user-select: none;
+            display: flex;
+            justify-content: center;
         }
         .font-sans-en { font-family: 'Inter', sans-serif; }
         
-        /* Smooth transitions */
-        .bottom-sheet-enter-active, .bottom-sheet-leave-active { transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
+        /* Mobile Constraint for Desktop - Portal Style */
+        #app-container {
+            width: 100%;
+            max-width: 480px; 
+            background-color: #f8fafc; /* Slate 50 */
+            position: relative;
+            box-shadow: 0 0 1px rgba(0,0,0,0.1), 0 10px 40px rgba(0,0,0,0.05);
+            border-left: 1px solid #e2e8f0;
+            border-right: 1px solid #e2e8f0;
+        }
+        
+        /* Transitions */
+        .bottom-sheet-enter-active, .bottom-sheet-leave-active { transition: transform 0.3s ease-out; }
         .bottom-sheet-enter-from, .bottom-sheet-leave-to { transform: translateY(100%); }
         .bottom-sheet-enter-to, .bottom-sheet-leave-from { transform: translateY(0); }
 
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
-        
-        .slide-fade-enter-active { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .slide-fade-leave-active { transition: all 0.2s cubic-bezier(0.4, 0, 1, 1); }
-        .slide-fade-enter-from, .slide-fade-leave-to { transform: translateX(20px); opacity: 0; }
 
-        /* Premium Calendar Cell Styles (Pastel & Soft) */
         .cell-empty { background-color: transparent; border: none; pointer-events: none; }
-        .cell-off { background-color: #ffffff; border: 1px solid #e2e8f0; color: #64748b; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-        .cell-work { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; box-shadow: 0 4px 14px -4px rgba(34, 197, 94, 0.2); }
-        .cell-ot { background-color: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; box-shadow: 0 4px 14px -4px rgba(59, 130, 246, 0.25); }
-        .cell-holiday-off { background-color: #fff1f2; border: 1px solid #fecdd3; color: #9f1239; box-shadow: 0 2px 8px -2px rgba(225, 29, 72, 0.1); }
-        .cell-probation { background-color: #eef2ff; border: 1px solid #c7d2fe; box-shadow: 0 4px 14px -4px rgba(99, 102, 241, 0.25); }
+        .cell-off { background-color: #ffffff; border: 1px solid #cbd5e1; color: #64748b; }
+        .cell-work { background-color: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+        .cell-ot { background-color: #eff6ff; border: 1px solid #93c5fd; color: #1e40af; }
+        .cell-holiday-off { background-color: #fef2f2; border: 1px solid #fecdd3; color: #9f1239; }
+        .cell-probation { background-color: #eef2ff; border: 1px solid #a5b4fc; }
 
-        input[type="number"], input[type="date"], select { user-select: auto; font-size: 16px !important; }
+        /* Form Inputs */
+        input[type="number"], input[type="date"], select { 
+            user-select: auto; 
+            font-size: 16px !important; 
+        }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        .toggle-checkbox:checked { right: 0; border-color: #6366f1; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #6366f1; }
+        /* Custom Toggle - Corporate Style */
+        .toggle-checkbox:checked { right: 0; border-color: #2563eb; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #2563eb; }
 
         /* Safe Areas */
         .pt-safe { padding-top: max(1rem, env(safe-area-inset-top)); }
         .pb-safe { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
-        .pb-safe-extended { padding-bottom: max(7.5rem, calc(6.5rem + env(safe-area-inset-bottom))); }
+        .pb-safe-extended { padding-bottom: max(8rem, calc(7rem + env(safe-area-inset-bottom))); }
 
-        .bg-glass { background-color: rgba(248, 250, 252, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-        .bg-glass-white { background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-        
-        .card-gradient { background: linear-gradient(135deg, #0f172a 0%, #312e81 100%); }
+        /* Corporate Gradient */
+        .corporate-gradient { background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); }
     </style>
 </head>
-<body class="overscroll-none selection:bg-indigo-100 selection:text-indigo-900">
+<body class="overscroll-none selection:bg-blue-100 selection:text-blue-900 h-screen w-full">
 
-<div id="app" class="h-screen flex flex-col relative" v-cloak>
+<div id="app-container" class="h-full flex flex-col overflow-hidden" v-cloak>
     
-    <!-- Modern Header -->
-    <header class="bg-glass border-b border-slate-200/60 pt-safe px-5 pb-3 sticky top-0 z-30">
-        <div class="flex justify-between items-center mb-4 mt-2">
+    <!-- Corporate Header -->
+    <header class="bg-white border-b border-slate-200 pt-safe px-5 pb-0 sticky top-0 z-30 shadow-sm">
+        <div class="flex justify-between items-center py-3">
             <div class="flex items-center gap-3">
-                <div class="w-11 h-11 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[18px] flex items-center justify-center shadow-lg shadow-indigo-500/30 text-white relative overflow-hidden">
-                    <i class="ph-bold ph-wallet text-2xl relative z-10"></i>
-                    <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-white/20 blur-xl rounded-full"></div>
+                <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-sm">
+                    <i class="ph ph-buildings text-[20px]"></i>
                 </div>
                 <div>
-                    <h1 class="text-[22px] font-black tracking-tight text-slate-800 leading-none">Corp<span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">HR</span></h1>
-                    <p class="text-slate-500 text-[11px] font-sans-en font-semibold mt-1 tracking-[0.1em] uppercase">Annual Dashboard</p>
+                    <h1 class="text-[18px] font-bold tracking-tight text-slate-900 leading-none">Corp<span class="text-blue-600">HR</span> Portal</h1>
+                    <p class="text-slate-500 text-[11px] font-sans-en font-medium mt-0.5 tracking-wider uppercase">Employee Dashboard</p>
                 </div>
             </div>
-            <button class="w-11 h-11 bg-white border border-slate-200/60 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition-all active:scale-90 shadow-sm" @click="showSettings = true">
-                <i class="ph-fill ph-gear-six text-[22px]"></i>
+            <button class="w-9 h-9 text-slate-500 hover:bg-slate-100 hover:text-slate-800 rounded-md flex items-center justify-center transition-colors" @click="showSettings = true">
+                <i class="ph ph-gear text-[22px]"></i>
             </button>
         </div>
 
-        <!-- Sleek Tabs (Scrollable) -->
-        <div class="flex gap-2.5 overflow-x-auto no-scrollbar py-1 -mx-2 px-2 snap-x snap-mandatory">
+        <!-- Sleek Tabs (Segmented Control Style) -->
+        <div class="flex gap-2 overflow-x-auto no-scrollbar py-3 -mx-2 px-2 snap-x snap-mandatory">
             <button v-for="cycle in cycles" :key="cycle.id" 
                 @click="selectedTab = cycle.id"
-                :class="['px-5 py-2.5 rounded-full text-[13.5px] font-bold whitespace-nowrap transition-all duration-300 active:scale-95 snap-center border', 
-                         selectedTab === cycle.id ? 'bg-slate-800 text-white border-slate-800 shadow-md shadow-slate-800/20' : 'bg-white text-slate-500 border-slate-200/80 hover:bg-slate-50']">
+                :class="['px-4 py-2 rounded-md text-[13px] font-semibold whitespace-nowrap transition-colors snap-center border', 
+                         selectedTab === cycle.id ? 'bg-blue-50 text-blue-700 border-blue-200 shadow-sm' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50']">
                 {{ cycle.name }}
             </button>
-            <div class="w-[1.5px] h-6 bg-slate-200 self-center mx-1 shrink-0 rounded-full"></div>
+            <div class="w-[1px] h-6 bg-slate-300 self-center mx-1 shrink-0"></div>
             <button @click="selectedTab = 'summary'"
-                :class="['px-5 py-2.5 rounded-full text-[13.5px] font-bold whitespace-nowrap transition-all duration-300 active:scale-95 flex items-center shrink-0 snap-center border', 
-                         selectedTab === 'summary' ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-600/20' : 'bg-indigo-50 border-indigo-100 text-indigo-600 hover:bg-indigo-100']">
-                <i class="ph-bold ph-chart-polar mr-1.5 text-[18px]"></i> สรุปรายได้รวม
+                :class="['px-4 py-2 rounded-md text-[13px] font-semibold whitespace-nowrap transition-colors flex items-center shrink-0 snap-center border', 
+                         selectedTab === 'summary' ? 'bg-slate-800 text-white border-slate-800 shadow-sm' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200']">
+                <i class="ph ph-chart-bar mr-1.5 text-[16px]"></i> สรุปรายได้
             </button>
         </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 overflow-y-auto pb-safe-extended relative z-10">
+    <main class="flex-1 overflow-y-auto pb-safe-extended relative z-10 scroll-smooth">
         
         <!-- CALENDAR VIEW -->
-        <div v-if="selectedTab !== 'summary'" class="p-5 space-y-5 animate-[fadeIn_0.2s_ease-out]">
-            
-            <!-- Beautiful Cycle Info Card -->
-            <div class="bg-white rounded-[24px] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-slate-100 relative overflow-hidden">
-                <div class="absolute -right-10 -top-10 w-32 h-32 bg-indigo-50 rounded-full opacity-80 blur-2xl"></div>
-                <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-emerald-50 rounded-full opacity-50 blur-2xl"></div>
+        <Transition name="fade" mode="out-in">
+            <div v-if="selectedTab !== 'summary'" :key="selectedTab" class="p-4 space-y-4">
                 
-                <div class="flex justify-between items-start relative z-10">
-                    <div>
-                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">รอบการทำงาน (Cycle)</p>
-                        <p class="text-[15px] text-slate-800 font-bold font-sans-en">{{ currentCycleData.rangeStr }}</p>
+                <!-- Structured Cycle Info Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center">
+                        <span class="text-[12px] font-bold text-slate-700 flex items-center"><i class="ph ph-calendar-blank mr-1.5 text-slate-500"></i> ข้อมูลรอบบัญชี</span>
+                        <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">Status: Active</span>
                     </div>
-                    <div class="text-right">
-                        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">วันเงินออก (Payday)</p>
-                        <div class="bg-emerald-50 text-emerald-700 px-3.5 py-1.5 rounded-xl inline-block font-sans-en font-bold text-[13px] border border-emerald-100/50 shadow-sm">
-                            {{ currentCycleData.payday }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Probation Highlight Banner (Dynamic based on selected start date) -->
-                <div v-if="isProbationInCurrentCycle" class="mt-4 flex gap-3.5 items-center bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl py-3 px-4 border border-indigo-100/50 shadow-sm relative z-10">
-                    <div class="w-9 h-9 rounded-full bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-500/20">
-                        <i class="ph-fill ph-star text-base"></i>
-                    </div>
-                    <div>
-                        <p class="text-[13px] font-bold text-indigo-900">{{ formatDateShort(probationDateStr) }} วันผ่านโปร 🎉</p>
-                        <p class="text-[11px] text-indigo-600/80 mt-0.5 font-medium">ครบรอบ 119 วัน นับจากเริ่มงาน {{ formatDateShort(globalSettings.startDate) }}</p>
-                    </div>
-                </div>
-                
-                <!-- Quick hints -->
-                <div class="mt-5 flex gap-3 text-[11px] text-slate-500 items-center bg-slate-50/80 rounded-[16px] py-3 px-3 border border-slate-100 relative z-10">
-                    <div class="flex items-center flex-1 justify-center font-medium"><i class="ph-fill ph-cursor-click text-indigo-400 mr-1.5 text-[18px]"></i> แตะค้างเพื่อแก้เวลา</div>
-                    <div class="w-[1.5px] h-4 bg-slate-200 rounded-full"></div>
-                    <div class="flex items-center flex-1 justify-center font-medium"><i class="ph-fill ph-magic-wand text-amber-400 mr-1.5 text-[18px]"></i> คำนวณเบี้ยขยันออโต้</div>
-                </div>
-            </div>
-
-            <!-- Calendar Grid Card -->
-            <div class="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-slate-100 overflow-hidden p-2.5">
-                <!-- Weekday Headers -->
-                <div class="grid grid-cols-7 text-center mb-2 mt-1">
-                    <div class="py-2 text-[10px] font-bold text-rose-500 uppercase tracking-widest">อา</div>
-                    <div class="py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">จ</div>
-                    <div class="py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">อ</div>
-                    <div class="py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">พ</div>
-                    <div class="py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">พฤ</div>
-                    <div class="py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">ศ</div>
-                    <div class="py-2 text-[10px] font-bold text-indigo-400 uppercase tracking-widest">ส</div>
-                </div>
-
-                <!-- Days -->
-                <div class="grid grid-cols-7 gap-[6px]">
-                    <div v-for="(day, index) in calendarGrid" :key="index"
-                         class="min-h-[5.8rem] rounded-2xl relative flex flex-col justify-between p-2 transition-all overflow-hidden select-none cursor-pointer active:scale-[0.92] duration-200"
-                         :class="[getCellClass(day), day.dateStr === probationDateStr ? 'cell-probation' : '']"
-                         @click="onCellClick(day, $event)"
-                         @touchstart="onTouchStart(day, $event)"
-                         @touchend="onTouchEnd"
-                         @touchmove="onTouchMove"
-                         @mousedown="onTouchStart(day, $event)"
-                         @mouseup="onTouchEnd"
-                         @mouseleave="onTouchEnd">
-                        
-                        <template v-if="!day.empty">
-                            <!-- Probation Star Badge -->
-                            <div v-if="day.dateStr === probationDateStr" class="absolute -top-1 -right-1 w-6 h-6 bg-indigo-500 rounded-bl-xl rounded-tr-2xl flex items-center justify-center shadow-sm z-20">
-                                <i class="ph-fill ph-star text-[11px] text-white"></i>
-                            </div>
-
-                            <!-- Date & Icons -->
-                            <div class="flex justify-between items-start w-full relative z-10">
-                                <span class="text-[14px] font-black font-sans-en leading-none tracking-tight" :class="getDateColor(day)">{{ getDateNumber(day.dateStr) }}</span>
-                                <div class="flex gap-0.5" v-if="day.dateStr !== probationDateStr">
-                                    <i v-if="day.isWorking && day.shift === 'Day'" class="ph-fill ph-sun text-amber-500 text-[11px] drop-shadow-sm"></i>
-                                    <i v-if="day.isWorking && day.shift === 'Night'" class="ph-fill ph-moon-stars text-indigo-500 text-[11px] drop-shadow-sm"></i>
-                                </div>
-                            </div>
-
-                            <!-- Status Badge -->
-                            <div class="flex-1 flex items-center justify-center w-full mt-1 relative z-10">
-                                <div v-if="day.isWorking" :class="['px-2 py-0.5 rounded-full text-[9px] font-bold text-center leading-tight shadow-sm border', day.workHours > 8 ? 'bg-blue-500 text-white border-blue-600' : 'bg-emerald-500 text-white border-emerald-600']">
-                                    {{ getStatusText(day) }}
-                                </div>
-                                <span v-else class="text-[10px] font-bold" :class="day.isHoliday ? 'text-rose-400' : 'text-slate-300'">หยุด</span>
-                            </div>
-
-                            <!-- Bottom Info (Pay) -->
-                            <div class="flex justify-between items-end w-full mt-1.5 h-3 relative z-10">
-                                <div></div>
-                                <span class="text-[10px] font-sans-en font-black leading-none" :class="getPayColor(day)" v-if="calculateDailyPay(day).total > 0">
-                                    {{ formatMoney(calculateDailyPay(day).total) }}
-                                </span>
-                            </div>
-
-                            <!-- Holiday Dot -->
-                            <div v-if="day.isHoliday" class="absolute top-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></div>
-                        </template>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Cycle Breakdown Stats -->
-            <div class="grid grid-cols-2 gap-4 pb-2">
-                <div class="bg-white p-4.5 rounded-[24px] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col justify-center relative overflow-hidden">
-                    <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-emerald-50 rounded-full blur-xl"></div>
-                    <div class="w-9 h-9 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-3 relative z-10">
-                        <i class="ph-bold ph-trend-up text-emerald-600 text-base"></i>
-                    </div>
-                    <p class="text-[11px] text-slate-400 font-bold mb-0.5 relative z-10">รายได้ & สวัสดิการ</p>
-                    <p class="text-[16px] font-black text-slate-800 font-sans-en tracking-tight relative z-10">+{{ formatMoney(cycleTotal.baseAndOT + cycleTotal.allowancesAndBonus) }}</p>
-                </div>
-                <div class="bg-white p-4.5 rounded-[24px] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col justify-center relative overflow-hidden">
-                    <div class="absolute -right-4 -bottom-4 w-16 h-16 bg-rose-50 rounded-full blur-xl"></div>
-                    <div class="w-9 h-9 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center mb-3 relative z-10">
-                        <i class="ph-bold ph-shield-warning text-rose-500 text-base"></i>
-                    </div>
-                    <p class="text-[11px] text-slate-400 font-bold mb-0.5 relative z-10">หักประกันสังคม</p>
-                    <p class="text-[16px] font-black text-slate-800 font-sans-en tracking-tight relative z-10">-{{ formatMoney(cycleTotal.deductions) }}</p>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- SUMMARY VIEW -->
-        <div v-if="selectedTab === 'summary'" class="p-5 space-y-6 animate-[fadeIn_0.3s_ease-out]">
-            <!-- Premium Total Card -->
-            <div class="card-gradient rounded-[32px] p-8 shadow-2xl shadow-indigo-900/20 text-white relative overflow-hidden border border-slate-700/50">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl"></div>
-                <div class="absolute bottom-0 left-0 w-40 h-40 bg-indigo-500/20 rounded-full translate-y-1/2 -translate-x-1/4 blur-2xl"></div>
-                
-                <h2 class="text-indigo-200 text-[11px] font-bold tracking-widest uppercase mb-2 relative z-10">รายได้สุทธิรวมตลอดปี</h2>
-                <div class="flex items-baseline gap-2 relative z-10 mb-8">
-                    <span class="text-[44px] font-black font-sans-en leading-none tracking-tighter drop-shadow-md">{{ formatMoney(yearlySummary.grandNetPay) }}</span>
-                    <span class="text-indigo-300 font-bold text-sm">THB</span>
-                </div>
-                
-                <div class="flex justify-between items-center bg-white/10 backdrop-blur-md rounded-2xl p-4 relative z-10 border border-white/10 shadow-inner">
-                    <div>
-                        <p class="text-indigo-200/80 text-[10px] uppercase font-bold mb-1 tracking-wider">รายรับทั้งหมด</p>
-                        <p class="text-[14px] font-black font-sans-en text-white tracking-tight">+{{ formatMoney(yearlySummary.grandIncome) }}</p>
-                    </div>
-                    <div class="w-px h-8 bg-white/10"></div>
-                    <div class="text-right">
-                        <p class="text-indigo-200/80 text-[10px] uppercase font-bold mb-1 tracking-wider">รายการหักรวม</p>
-                        <p class="text-[14px] font-black font-sans-en text-white tracking-tight">-{{ formatMoney(yearlySummary.grandDeduction) }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="space-y-4">
-                <h3 class="text-[14px] font-black text-slate-800 pl-1 flex items-center"><i class="ph-fill ph-list-dashes mr-2 text-indigo-500"></i>รายละเอียดรายรอบบิล ({{ cycles.length }} รอบ)</h3>
-                <!-- Cycle List Items -->
-                <div v-for="cycle in cycles" :key="cycle.id" class="bg-white rounded-[24px] p-5 border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.02)] flex flex-col gap-4">
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-3.5">
-                            <div class="w-11 h-11 rounded-[18px] flex items-center justify-center shadow-sm"
-                                 :class="cycle.id === 'aug' ? 'bg-indigo-50 border border-indigo-100' : 'bg-slate-50 border border-slate-100'">
-                                <i class="ph-fill text-xl" :class="cycle.id === 'aug' ? 'ph-star text-indigo-500' : 'ph-calendar-blank text-slate-400'"></i>
-                            </div>
-                            <div>
-                                <h4 class="font-black text-slate-800 text-[15px] leading-tight flex items-center">
-                                    {{ cycle.name }}
-                                </h4>
-                                <p class="text-[11px] text-slate-400 font-sans-en font-medium mt-0.5 tracking-wide">Payday: {{ cycle.payday }}</p>
-                            </div>
+                    <div class="p-4 flex justify-between items-center">
+                        <div>
+                            <p class="text-[11px] text-slate-500 font-medium uppercase tracking-wider mb-1">รอบการทำงาน (Cycle)</p>
+                            <p class="text-[14px] text-slate-900 font-semibold font-sans-en">{{ currentCycleData.rangeStr }}</p>
                         </div>
                         <div class="text-right">
-                            <span class="font-black text-indigo-600 font-sans-en text-[18px] tracking-tight">{{ formatMoney(getCycleTotals(cycle.id).netPay) }}</span>
+                            <p class="text-[11px] text-slate-500 font-medium uppercase tracking-wider mb-1">กำหนดจ่าย (Payday)</p>
+                            <p class="text-[14px] text-slate-900 font-semibold font-sans-en">{{ currentCycleData.payday }}</p>
                         </div>
                     </div>
-                    <div class="bg-slate-50/80 rounded-2xl p-3.5 flex justify-between items-center text-[11px] font-sans-en font-bold border border-slate-100/80">
-                        <div class="text-slate-600 flex flex-col"><span class="text-[9px] uppercase tracking-wider text-slate-400 mb-0.5">Wage+OT</span> {{ formatMoney(getCycleTotals(cycle.id).baseAndOT) }}</div>
-                        <div class="text-emerald-600 flex flex-col items-center"><span class="text-[9px] uppercase tracking-wider text-emerald-400/80 mb-0.5">Bonus</span> +{{ formatMoney(getCycleTotals(cycle.id).allowancesAndBonus) }}</div>
-                        <div class="text-rose-600 flex flex-col items-end"><span class="text-[9px] uppercase tracking-wider text-rose-400/80 mb-0.5">Deduct</span> -{{ formatMoney(getCycleTotals(cycle.id).deductions) }}</div>
+                </div>
+
+                <!-- Probation Highlight Banner (Corporate Alert Style) -->
+                <div v-if="isProbationInCurrentCycle" class="bg-blue-50 border-l-4 border-blue-600 rounded-r-xl p-4 shadow-sm flex items-start gap-3">
+                    <i class="ph-fill ph-check-circle text-blue-600 text-[20px] mt-0.5"></i>
+                    <div>
+                        <p class="text-[13px] font-bold text-blue-900">แจ้งเตือน: ครบกำหนดทดลองงาน</p>
+                        <p class="text-[12px] text-blue-800 mt-1 leading-relaxed">พนักงานจะผ่านโปรในวันที่ <b>{{ formatDateShort(probationDateStr) }}</b> (ครบ 119 วัน นับจาก {{ formatDateShort(globalSettings.startDate) }})</p>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex justify-between items-center">
+                        <span class="text-[12px] font-bold text-slate-700 flex items-center"><i class="ph ph-table mr-1.5 text-slate-500"></i> ตารางลงเวลา (Timesheet)</span>
+                    </div>
+                    <div class="p-3">
+                        <!-- Weekday Headers -->
+                        <div class="grid grid-cols-7 text-center mb-2">
+                            <div class="py-1 text-[11px] font-bold text-rose-600">อา</div>
+                            <div class="py-1 text-[11px] font-bold text-slate-500">จ</div>
+                            <div class="py-1 text-[11px] font-bold text-slate-500">อ</div>
+                            <div class="py-1 text-[11px] font-bold text-slate-500">พ</div>
+                            <div class="py-1 text-[11px] font-bold text-slate-500">พฤ</div>
+                            <div class="py-1 text-[11px] font-bold text-slate-500">ศ</div>
+                            <div class="py-1 text-[11px] font-bold text-slate-500">ส</div>
+                        </div>
+
+                        <!-- Days -->
+                        <div class="grid grid-cols-7 gap-1.5">
+                            <div v-for="(day, index) in calendarGrid" :key="index"
+                                 class="h-[5.5rem] rounded-lg relative flex flex-col p-1.5 transition-colors overflow-hidden select-none cursor-pointer active:bg-slate-50"
+                                 :class="[getCellClass(day), day.dateStr === probationDateStr ? 'ring-2 ring-blue-400 ring-inset' : '']"
+                                 @click="onCellClick(day, $event)"
+                                 @touchstart="onTouchStart(day, $event)"
+                                 @touchend="onTouchEnd"
+                                 @touchmove="onTouchMove"
+                                 @mousedown="onTouchStart(day, $event)"
+                                 @mouseup="onTouchEnd"
+                                 @mouseleave="onTouchEnd">
+                                
+                                <template v-if="!day.empty">
+                                    <!-- Date & Icons -->
+                                    <div class="flex justify-between items-center w-full">
+                                        <span class="text-[13px] font-semibold font-sans-en" :class="getDateColor(day)">{{ getDateNumber(day.dateStr) }}</span>
+                                        <div class="flex gap-0.5 text-[12px]">
+                                            <i v-if="day.isWorking && day.shift === 'Day'" class="ph-fill ph-sun text-amber-500"></i>
+                                            <i v-if="day.isWorking && day.shift === 'Night'" class="ph-fill ph-moon text-indigo-500"></i>
+                                            <i v-if="day.dateStr === probationDateStr" class="ph-fill ph-star text-blue-600"></i>
+                                        </div>
+                                    </div>
+
+                                    <!-- Status Badge -->
+                                    <div class="flex-1 flex flex-col items-center justify-center w-full my-0.5">
+                                        <div v-if="day.isWorking" :class="['px-1.5 py-0.5 rounded text-[10px] font-medium w-full text-center truncate font-sans-en', day.workHours > 8 ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700']">
+                                            {{ getStatusText(day) }}
+                                        </div>
+                                        <span v-else class="text-[10px] font-medium" :class="day.isHoliday ? 'text-rose-500' : 'text-slate-400'">Off</span>
+                                        
+                                        <!-- Holiday Dot -->
+                                        <div v-if="day.isHoliday && !day.isWorking" class="w-1 h-1 rounded-full bg-rose-500 mt-1"></div>
+                                    </div>
+
+                                    <!-- Bottom Info (Pay) -->
+                                    <div class="w-full text-right">
+                                        <span class="text-[10px] font-sans-en font-semibold" :class="getPayColor(day)" v-if="calculateDailyPay(day).total > 0">
+                                            {{ formatMoney(calculateDailyPay(day).total) }}
+                                        </span>
+                                        <span v-else class="block h-[12px]"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick hints Footer -->
+                    <div class="bg-slate-50 px-4 py-2 border-t border-slate-200 text-[10px] text-slate-500 flex justify-between items-center">
+                        <span><i class="ph ph-hand-tap align-middle mr-1 text-[14px]"></i> แตะเปลี่ยนสถานะ</span>
+                        <span><i class="ph ph-hand-pointing align-middle mr-1 text-[14px]"></i> กดค้างเพื่อตั้งค่า</span>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 pb-2">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="ph ph-plus-circle text-emerald-600 text-[18px]"></i>
+                            <p class="text-[11px] text-slate-600 font-semibold tracking-wide">รายได้ & สวัสดิการ</p>
+                        </div>
+                        <p class="text-[18px] font-bold text-emerald-700 font-sans-en tracking-tight">{{ formatMoney(cycleTotal.baseAndOT + cycleTotal.allowancesAndBonus) }}</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                        <div class="flex items-center gap-2 mb-2">
+                            <i class="ph ph-minus-circle text-rose-600 text-[18px]"></i>
+                            <p class="text-[11px] text-slate-600 font-semibold tracking-wide">รายการหัก (SSO)</p>
+                        </div>
+                        <p class="text-[18px] font-bold text-rose-700 font-sans-en tracking-tight">{{ formatMoney(cycleTotal.deductions) }}</p>
+                    </div>
+                </div>
+
+            </div>
+        </Transition>
+
+        <Transition name="fade" mode="out-in">
+            <div v-if="selectedTab === 'summary'" class="p-4 space-y-4">
+                <!-- Corporate Total Card -->
+                <div class="corporate-gradient rounded-xl p-6 shadow-md text-white relative overflow-hidden border border-slate-700">
+                    <!-- Subtle pattern overlay -->
+                    <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 16px 16px;"></div>
+                    
+                    <div class="relative z-10">
+                        <h2 class="text-slate-300 text-[12px] font-semibold tracking-wider uppercase mb-1">รายได้สุทธิรวมตลอดปี (YTD Net Pay)</h2>
+                        <div class="flex items-end gap-2 mb-6">
+                            <span class="text-[36px] font-bold font-sans-en leading-none tracking-tight">{{ formatMoney(yearlySummary.grandNetPay) }}</span>
+                            <span class="text-slate-400 font-medium text-[13px] mb-1">THB</span>
+                        </div>
+                        
+                        <div class="flex w-full justify-between items-center bg-slate-800/50 rounded-lg p-3 border border-slate-600/50">
+                            <div class="flex-1">
+                                <p class="text-slate-400 text-[10px] uppercase font-semibold mb-0.5 tracking-wider">รายรับรวม (Gross)</p>
+                                <p class="text-[14px] font-bold font-sans-en text-emerald-400">+{{ formatMoney(yearlySummary.grandIncome) }}</p>
+                            </div>
+                            <div class="w-[1px] h-8 bg-slate-600 mx-3"></div>
+                            <div class="flex-1 text-right">
+                                <p class="text-slate-400 text-[10px] uppercase font-semibold mb-0.5 tracking-wider">รายการหัก (Deductions)</p>
+                                <p class="text-[14px] font-bold font-sans-en text-rose-400">-{{ formatMoney(yearlySummary.grandDeduction) }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-[13px] font-bold text-slate-700 flex items-center border-b border-slate-200 pb-2">
+                        <i class="ph ph-files mr-2 text-slate-500 text-[16px]"></i> รายละเอียดการจ่ายเงิน ({{ cycles.length }} รอบ)
+                    </h3>
+                    
+                    <!-- Corporate List Items -->
+                    <div v-for="cycle in cycles" :key="cycle.id" class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+                        <div class="p-4 flex justify-between items-center border-b border-slate-100 bg-slate-50/50">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded bg-slate-100 flex items-center justify-center border border-slate-200"
+                                     :class="cycle.id === 'aug' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'text-slate-500'">
+                                    <i class="ph ph-calendar text-[16px]" :class="cycle.id === 'aug' ? 'ph-star' : ''"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-[14px] leading-tight">{{ cycle.name }}</h4>
+                                    <p class="text-[10px] text-slate-500 font-sans-en font-medium mt-0.5">Payday: {{ cycle.payday }}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-[10px] text-slate-400 block mb-0.5 uppercase tracking-wider font-semibold">Net Pay</span>
+                                <span class="font-bold text-slate-900 font-sans-en text-[16px] tracking-tight">{{ formatMoney(getCycleTotals(cycle.id).netPay) }}</span>
+                            </div>
+                        </div>
+                        <div class="p-3 flex justify-between items-center text-[11px] font-sans-en">
+                            <div class="flex-1 flex flex-col"><span class="text-[10px] text-slate-500 mb-0.5 font-semibold">Wage+OT</span> <span class="text-slate-700 font-medium">{{ formatMoney(getCycleTotals(cycle.id).baseAndOT) }}</span></div>
+                            <div class="flex-1 flex flex-col border-x border-slate-100 pl-3"><span class="text-[10px] text-slate-500 mb-0.5 font-semibold">Allowances</span> <span class="text-emerald-600 font-medium">+{{ formatMoney(getCycleTotals(cycle.id).allowancesAndBonus) }}</span></div>
+                            <div class="flex-1 flex flex-col text-right"><span class="text-[10px] text-slate-500 mb-0.5 font-semibold">Deductions</span> <span class="text-rose-600 font-medium">-{{ formatMoney(getCycleTotals(cycle.id).deductions) }}</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </Transition>
 
     </main>
 
-    <!-- Glassmorphic Bottom Sticky Bar -->
-    <div v-if="selectedTab !== 'summary'" class="fixed bottom-0 left-0 right-0 bg-glass-white border-t border-slate-200/50 px-6 pt-4 pb-safe flex justify-between items-center shadow-[0_-20px_40px_-15px_rgba(0,0,0,0.05)] z-20">
+    <div v-if="selectedTab !== 'summary'" class="bg-white border-t border-slate-200 px-5 pt-3 pb-safe flex justify-between items-center z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
         <div>
             <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">รับสุทธิ (Net Pay)</p>
-            <p class="text-[30px] font-black text-slate-800 font-sans-en leading-none tracking-tighter drop-shadow-sm">{{ formatMoney(cycleTotal.netPay) }}</p>
+            <p class="text-[26px] font-bold text-slate-900 font-sans-en leading-none tracking-tight">{{ formatMoney(cycleTotal.netPay) }}</p>
         </div>
-        <button @click="showSettings = true" class="bg-slate-800 text-white hover:bg-slate-900 px-6 py-3.5 rounded-[18px] text-[14px] font-bold flex items-center transition-transform active:scale-95 shadow-lg shadow-slate-800/20">
-            <i class="ph-bold ph-faders mr-2 text-[18px]"></i> ตั้งค่า
+        <button @click="showSettings = true" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-3 rounded-lg text-[13px] font-semibold flex items-center transition-colors shadow-sm">
+            <i class="ph ph-sliders-horizontal mr-2 text-[18px]"></i> ตั้งค่า
         </button>
     </div>
 
-    <!-- OVERLAYS & MODALS -->
     
-    <!-- Day Detail Modal -->
+    <!-- Day Detail Modal (Corporate Form Style) -->
     <Transition name="fade">
-        <div v-if="activeDayModal" class="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm" @click="closeModal"></div>
+        <div v-if="activeDayModal" class="fixed inset-0 bg-slate-900/50 z-40 backdrop-blur-sm absolute" @click="closeModal"></div>
     </Transition>
     <Transition name="bottom-sheet">
-        <div v-if="activeDayModal" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl z-50 overflow-hidden flex flex-col max-h-[90vh]">
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mt-4 mb-2 shrink-0"></div>
-            
-            <div class="px-6 py-4 flex justify-between items-start bg-white z-10 shrink-0">
+        <div v-if="activeDayModal" class="fixed bottom-0 left-0 right-0 absolute bg-white rounded-t-2xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[90vh]">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
                 <div>
-                    <h3 class="text-[22px] font-black font-sans-en text-slate-800 tracking-tight">{{ formatDateFull(activeDayModal.dateStr) }}</h3>
-                    <div class="inline-flex flex-wrap gap-2 mt-2">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm border" 
-                             :class="activeDayModal.isHoliday ? 'bg-rose-50 text-rose-700 border-rose-100' : (activeDayModal.isSunday ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-slate-50 text-slate-600 border-slate-200')">
+                    <h3 class="text-[16px] font-bold text-slate-800 tracking-tight">{{ formatDateFull(activeDayModal.dateStr) }}</h3>
+                    <div class="flex gap-2 mt-1">
+                        <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                             {{ activeDayModal.isHoliday ? activeDayModal.holidayName : (activeDayModal.isSunday ? 'วันหยุดประจำสัปดาห์' : 'วันทำงานปกติ') }}
-                        </span>
-                        <span v-if="activeDayModal.dateStr === probationDateStr" class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold bg-indigo-50 border border-indigo-100 text-indigo-700 shadow-sm">
-                            <i class="ph-fill ph-star mr-1"></i> ผ่านโปร
                         </span>
                     </div>
                 </div>
-                <button @click="closeModal" class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors active:scale-90">
-                    <i class="ph-bold ph-x text-base"></i>
+                <button @click="closeModal" class="w-8 h-8 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 flex items-center justify-center transition-colors">
+                    <i class="ph ph-x text-[18px]"></i>
                 </button>
             </div>
 
-            <div class="p-6 overflow-y-auto space-y-6 pb-safe">
+            <div class="p-5 overflow-y-auto space-y-5 pb-safe">
                 
-                <!-- Special Probation Banner in Modal -->
-                <div v-if="activeDayModal.dateStr === probationDateStr" class="bg-indigo-50 border border-indigo-100 rounded-[20px] p-4 flex items-center gap-4 shadow-sm animate-[fadeIn_0.5s_ease-out]">
-                    <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg shadow-indigo-500/30">
-                        <i class="ph-fill ph-confetti text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-[15px] font-bold text-indigo-800 leading-tight mb-1">ยินดีด้วย! คุณผ่านโปรแล้ว</p>
-                        <p class="text-[11px] text-indigo-600">เป็นพนักงานประจำเต็มตัวหลังจากทำงานครบ 119 วัน นับจากวันที่ {{ formatDateShort(globalSettings.startDate) }}</p>
-                    </div>
-                </div>
-
-                <!-- Shift Selection -->
-                <div class="space-y-2.5">
-                    <label class="text-[13px] font-bold text-slate-700 pl-1">กะทำงาน (Shift)</label>
-                    <div class="flex bg-slate-100 p-1.5 rounded-[20px]">
-                        <button @click="modalShift = 'Day'" :class="modalShift === 'Day' ? 'bg-white shadow-sm text-amber-500 ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-3.5 rounded-2xl text-[14px] font-bold flex justify-center items-center transition-all">
-                            <i class="ph-fill ph-sun mr-2 text-xl"></i> กะเช้า
+                <!-- Shift Selection (Toggle Buttons) -->
+                <div class="space-y-2">
+                    <label class="block text-[12px] font-bold text-slate-600">กะทำงาน (Shift)</label>
+                    <div class="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+                        <button @click="modalShift = 'Day'" :class="modalShift === 'Day' ? 'bg-white shadow-sm text-blue-600 border border-slate-200' : 'text-slate-600 hover:text-slate-800 border border-transparent'" class="flex-1 py-2.5 rounded-md text-[13px] font-semibold flex justify-center items-center transition-all">
+                            <i class="ph ph-sun mr-1.5 text-[16px]"></i> กะเช้า
                         </button>
-                        <button @click="modalShift = 'Night'" :class="modalShift === 'Night' ? 'bg-white shadow-sm text-indigo-500 ring-1 ring-slate-200/50' : 'text-slate-500 hover:text-slate-700'" class="flex-1 py-3.5 rounded-2xl text-[14px] font-bold flex justify-center items-center transition-all">
-                            <i class="ph-fill ph-moon-stars mr-2 text-xl"></i> กะดึก
+                        <button @click="modalShift = 'Night'" :class="modalShift === 'Night' ? 'bg-white shadow-sm text-indigo-600 border border-slate-200' : 'text-slate-600 hover:text-slate-800 border border-transparent'" class="flex-1 py-2.5 rounded-md text-[13px] font-semibold flex justify-center items-center transition-all">
+                            <i class="ph ph-moon mr-1.5 text-[16px]"></i> กะดึก
                         </button>
                     </div>
                 </div>
 
                 <!-- Work Status Selection -->
-                <div class="space-y-2.5">
-                    <label class="text-[13px] font-bold text-slate-700 pl-1">ชั่วโมงทำงานจริง</label>
+                <div class="space-y-2">
+                    <label class="block text-[12px] font-bold text-slate-600">ชั่วโมงทำงานจริง</label>
                     <div class="relative group">
-                        <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none transition-colors group-focus-within:text-indigo-500">
-                            <i class="ph-fill ph-clock text-[20px] text-slate-400 group-focus-within:text-indigo-500"></i>
+                        <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="ph ph-clock text-[18px]"></i>
                         </div>
-                        <select v-model.number="modalWorkHours" class="w-full bg-slate-50 border border-slate-200/80 rounded-[20px] pl-12 pr-10 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-[15px] font-bold font-sans-en appearance-none cursor-pointer text-slate-800 transition-all shadow-sm">
+                        <select v-model.number="modalWorkHours" class="w-full bg-white border border-slate-300 rounded-lg pl-10 pr-10 py-3 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-[14px] font-semibold font-sans-en appearance-none cursor-pointer text-slate-800 transition-all">
                             <option :value="0">หยุดงาน (Off)</option>
                             <option v-for="hr in getAvailableHours()" :key="hr" :value="hr">
                                 ทำงาน {{ hr }} ชม. {{ hr > 8 ? `(+OT ${hr-8}h)` : '' }}
                             </option>
                         </select>
-                        <div class="absolute inset-y-0 right-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-500">
-                            <i class="ph-bold ph-caret-down text-base"></i>
+                        <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-slate-400">
+                            <i class="ph ph-caret-down text-[16px]"></i>
                         </div>
                     </div>
                 </div>
 
                 <!-- Breakdown Receipt -->
-                <div class="bg-gradient-to-b from-slate-50 to-white rounded-[24px] p-5 border border-slate-200/80 shadow-sm relative overflow-hidden">
-                    <div class="absolute -right-4 -top-4 w-16 h-16 bg-slate-100 rounded-full blur-xl"></div>
-                    <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center relative z-10">สรุปรายได้ประจำวัน</h4>
-                    <div class="space-y-3.5 relative z-10">
-                        <div class="flex justify-between items-center text-[13.5px]">
-                            <span class="text-slate-500 font-bold">ค่าแรงพื้นฐาน + โอที</span>
-                            <span class="font-sans-en font-black text-slate-800">{{ formatMoney(modalPreviewPay.wageOT) }}</span>
+                <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                    <h4 class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-3 border-b border-slate-200 pb-2">สรุปรายได้ประจำวัน</h4>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center text-[13px]">
+                            <span class="text-slate-600 font-medium">ค่าแรงพื้นฐาน + โอที</span>
+                            <span class="font-sans-en font-semibold text-slate-800">{{ formatMoney(modalPreviewPay.wageOT) }}</span>
                         </div>
-                        <div class="flex justify-between items-center text-[13.5px]">
-                            <span class="text-slate-500 font-bold">ค่าอาหาร</span>
-                            <span class="font-sans-en font-black text-slate-800">{{ formatMoney(modalPreviewPay.food) }}</span>
+                        <div class="flex justify-between items-center text-[13px]">
+                            <span class="text-slate-600 font-medium">ค่าอาหาร</span>
+                            <span class="font-sans-en font-semibold text-slate-800">{{ formatMoney(modalPreviewPay.food) }}</span>
                         </div>
-                        <div class="flex justify-between items-center text-[13.5px]">
-                            <span class="text-slate-500 font-bold">ค่ากะ</span>
-                            <span class="font-sans-en font-black text-slate-800">{{ formatMoney(modalPreviewPay.shift) }}</span>
+                        <div class="flex justify-between items-center text-[13px]">
+                            <span class="text-slate-600 font-medium">ค่ากะ</span>
+                            <span class="font-sans-en font-semibold text-slate-800">{{ formatMoney(modalPreviewPay.shift) }}</span>
                         </div>
                     </div>
-                    <div class="mt-5 pt-4 border-t border-slate-200/80 flex justify-between items-end relative z-10">
-                        <span class="font-black text-slate-800 text-[14px]">รวมรับวันนี้</span>
-                        <span class="font-sans-en font-black text-indigo-600 text-[26px] leading-none tracking-tight drop-shadow-sm">{{ formatMoney(modalPreviewPay.total) }}</span>
+                    <div class="mt-4 pt-3 border-t border-slate-200 flex justify-between items-end">
+                        <span class="font-bold text-slate-800 text-[13px]">รวมรับวันนี้</span>
+                        <span class="font-sans-en font-bold text-blue-600 text-[20px] leading-none">{{ formatMoney(modalPreviewPay.total) }}</span>
                     </div>
                 </div>
 
-                <button @click="saveModal" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4.5 rounded-[20px] transition-transform active:scale-[0.98] shadow-lg shadow-indigo-600/25 text-[15px]">
+                <button @click="saveModal" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-lg transition-colors text-[14px]">
                     บันทึกข้อมูล
                 </button>
             </div>
         </div>
     </Transition>
 
-    <!-- Global Settings Modal -->
     <Transition name="fade">
-        <div v-if="showSettings" class="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm" @click="showSettings = false"></div>
+        <div v-if="showSettings" class="fixed inset-0 bg-slate-900/50 z-40 backdrop-blur-sm absolute" @click="showSettings = false"></div>
     </Transition>
     <Transition name="bottom-sheet">
-        <div v-if="showSettings" class="fixed bottom-0 left-0 right-0 bg-white rounded-t-[32px] shadow-2xl z-50 overflow-hidden pb-safe flex flex-col max-h-[90vh]">
-            <div class="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mt-4 mb-2 shrink-0"></div>
-            <div class="px-6 py-4 flex justify-between items-center bg-white z-10 sticky top-0 border-b border-slate-100">
-                <h3 class="text-[22px] font-black text-slate-800 tracking-tight">ตั้งค่า <span class="text-[13px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-xl ml-1 align-middle shadow-sm">{{ currentCycleData.name }}</span></h3>
-                <button @click="showSettings = false" class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 hover:text-slate-700 transition-colors active:scale-90">
-                    <i class="ph-bold ph-x text-base"></i>
+        <div v-if="showSettings" class="fixed bottom-0 left-0 right-0 absolute bg-white rounded-t-2xl shadow-2xl z-50 overflow-hidden pb-safe flex flex-col max-h-[90vh]">
+            <!-- Header -->
+            <div class="px-5 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-[16px] font-bold text-slate-800 tracking-tight">ตั้งค่าระบบ</h3>
+                    <span class="text-[10px] font-semibold text-blue-700 bg-blue-100 border border-blue-200 px-2 py-0.5 rounded">{{ currentCycleData.name }}</span>
+                </div>
+                <button @click="showSettings = false" class="w-8 h-8 rounded text-slate-400 hover:bg-slate-200 hover:text-slate-700 flex items-center justify-center transition-colors">
+                    <i class="ph ph-x text-[18px]"></i>
                 </button>
             </div>
             
-            <div class="p-6 space-y-6 overflow-y-auto pb-safe-extended">
+            <div class="p-5 space-y-6 overflow-y-auto pb-safe-extended">
                 
-                <!-- NEW: Global Wage Settings -->
-                <div class="bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-slate-200/80 p-5 rounded-[24px] space-y-4 shadow-sm">
-                    <div class="flex items-center gap-2.5 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shadow-sm">
-                            <i class="ph-fill ph-money text-lg"></i>
-                        </div>
-                        <h4 class="font-black text-slate-800">ตั้งค่าเรทค่าแรงและสวัสดิการ</h4>
-                    </div>
+                <!-- Global Wage Settings -->
+                <div class="space-y-4">
+                    <h4 class="font-bold text-slate-800 text-[13px] flex items-center border-b border-slate-100 pb-2">
+                        <i class="ph ph-briefcase text-slate-500 mr-2"></i> ข้อมูลการจ้างงานเบื้องต้น
+                    </h4>
 
                     <div class="space-y-1.5">
-                        <label class="text-[11px] font-bold text-slate-500">วันที่เริ่มงานวันแรก (มีผลกับการคำนวณผ่านโปร)</label>
-                        <input type="date" v-model="globalSettings.startDate" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[15px] font-bold font-sans-en text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all">
+                        <label class="text-[11px] font-semibold text-slate-600">วันที่เริ่มงานวันแรก (คำนวณผ่านโปร)</label>
+                        <input type="date" v-model="globalSettings.startDate" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
                     </div>
                     
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-3">
                         <div class="space-y-1.5">
-                            <label class="text-[11px] font-bold text-slate-500">ค่าแรงพื้นฐาน/วัน</label>
-                            <input type="number" v-model.number="globalSettings.baseWage" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[15px] font-bold font-sans-en text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all">
+                            <label class="text-[11px] font-semibold text-slate-600">ค่าแรงพื้นฐาน/วัน</label>
+                            <input type="number" v-model.number="globalSettings.baseWage" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
                         </div>
                         <div class="space-y-1.5">
-                            <label class="text-[11px] font-bold text-slate-500">รายชั่วโมง (Auto)</label>
-                            <input type="number" v-model.number="globalSettings.hourlyRate" disabled class="w-full bg-slate-100/80 border border-transparent rounded-xl px-3 py-2.5 text-[15px] font-bold font-sans-en text-slate-400">
+                            <label class="text-[11px] font-semibold text-slate-500">รายชั่วโมง (Auto)</label>
+                            <input type="number" v-model.number="globalSettings.hourlyRate" disabled class="w-full bg-slate-100 border border-slate-200 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-500 cursor-not-allowed">
                         </div>
                     </div>
                     
                     <div class="space-y-1.5">
-                        <label class="text-[11px] font-bold text-slate-500">ค่าอาหาร (ปกติ / OT)</label>
+                        <label class="text-[11px] font-semibold text-slate-600">ค่าอาหาร (ปกติ / OT)</label>
                         <div class="flex gap-2">
-                            <input type="number" v-model.number="globalSettings.foodAllowance" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[15px] font-bold font-sans-en text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all text-center">
-                            <input type="number" v-model.number="globalSettings.otFoodAllowance" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[15px] font-bold font-sans-en text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all text-center">
+                            <input type="number" v-model.number="globalSettings.foodAllowance" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="ปกติ">
+                            <input type="number" v-model.number="globalSettings.otFoodAllowance" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="ทำ OT">
                         </div>
                     </div>
 
                     <div class="space-y-1.5">
-                        <label class="text-[11px] font-bold text-slate-500">ค่ากะดึก (ปกติ / OT)</label>
+                        <label class="text-[11px] font-semibold text-slate-600">ค่ากะดึก (ปกติ / OT)</label>
                         <div class="flex gap-2">
-                            <input type="number" v-model.number="globalSettings.shiftAllowanceNoOT" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[15px] font-bold font-sans-en text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all text-center">
-                            <input type="number" v-model.number="globalSettings.shiftAllowanceWithOT" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[15px] font-bold font-sans-en text-slate-800 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 shadow-sm transition-all text-center">
+                            <input type="number" v-model.number="globalSettings.shiftAllowanceNoOT" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="ปกติ">
+                            <input type="number" v-model.number="globalSettings.shiftAllowanceWithOT" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-800 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all" placeholder="ทำ OT">
                         </div>
                     </div>
                 </div>
 
-                <!-- Monthly Settings below -->
-                <!-- Attendance Bonus -->
-                <div class="space-y-2">
-                    <label class="text-[13px] font-bold text-slate-700 pl-1">เบี้ยขยัน (คำนวณอัตโนมัติ)</label>
-                    <div class="bg-emerald-50/80 border border-emerald-200/60 rounded-[20px] p-4.5 flex items-center justify-between shadow-sm">
+                <!-- Monthly Settings -->
+                <div class="space-y-4 pt-2">
+                    <h4 class="font-bold text-slate-800 text-[13px] flex items-center border-b border-slate-100 pb-2">
+                        <i class="ph ph-calendar-check text-slate-500 mr-2"></i> ข้อมูลเฉพาะรอบบิลนี้
+                    </h4>
+
+                    <!-- Attendance Bonus -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 flex justify-between items-center">
                         <div>
-                            <p class="text-[14px] font-black text-emerald-800">เบี้ยขยันรอบนี้</p>
-                            <p class="text-[11px] text-emerald-600/80 font-bold mt-0.5">ทำงานครบทุกวันรับเพิ่มต่อเนื่อง</p>
+                            <p class="text-[12px] font-bold text-slate-700">เบี้ยขยัน (คำนวณอัตโนมัติ)</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">ทำงานครบทุกวันรับเพิ่มต่อเนื่อง</p>
                         </div>
-                        <div class="text-right flex items-baseline">
-                            <span class="text-[22px] font-black font-sans-en text-emerald-600 drop-shadow-sm">{{ formatMoney(attendanceBonusMap[selectedTab]) }}</span>
-                            <span class="text-[12px] font-bold text-emerald-600 ml-1">THB</span>
+                        <div class="text-right">
+                            <span class="text-[16px] font-bold font-sans-en text-emerald-600">{{ formatMoney(attendanceBonusMap[selectedTab]) }}</span>
+                            <span class="text-[10px] font-semibold text-slate-500 ml-1">THB</span>
+                        </div>
+                    </div>
+
+                    <!-- Performance Bonus -->
+                    <div class="space-y-1.5">
+                        <label class="text-[11px] font-semibold text-slate-600">ค่า KPI รายเดือน (อ้างอิงตามสลิป)</label>
+                        <div class="relative group">
+                            <input type="number" min="0" max="10000" v-model.number="monthlySettings[selectedTab].performanceBonus" class="w-full bg-white border border-slate-300 rounded-md pl-3 pr-12 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-[14px] font-semibold font-sans-en text-slate-800 transition-all">
+                            <span class="absolute inset-y-0 right-3 flex items-center text-slate-400 text-[11px] font-bold">THB</span>
+                        </div>
+                    </div>
+
+                    <!-- SSO Toggle -->
+                    <div class="border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                            <p class="text-[12px] font-bold text-slate-700">หักประกันสังคม 5%</p>
+                            <p class="text-[10px] text-slate-500 mt-0.5">หักสูงสุดไม่เกิน 750 บาท</p>
+                        </div>
+                        <div class="relative inline-block w-11 h-6 align-middle select-none">
+                            <input type="checkbox" v-model="monthlySettings[selectedTab].deductSSO" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-[2px] border-slate-300 appearance-none cursor-pointer transition-all duration-300 z-10 m-0 p-0 top-0 left-0 shadow-sm"/>
+                            <div class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer transition-all duration-300 m-0 p-0"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Performance Bonus -->
-                <div class="space-y-2">
-                    <label class="text-[13px] font-bold text-slate-700 pl-1">ค่า KPI รายเดือน (อ้างอิงตาม Payslip)</label>
-                    <div class="relative group">
-                        <input type="number" min="0" max="10000" v-model.number="monthlySettings[selectedTab].performanceBonus" class="w-full bg-slate-50 border border-slate-200/80 rounded-[20px] pl-5 pr-14 py-4 outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-[16px] font-black font-sans-en text-slate-800 shadow-sm transition-all">
-                        <span class="absolute inset-y-0 right-5 flex items-center text-slate-400 group-focus-within:text-indigo-500 text-[13px] font-bold transition-colors">THB</span>
-                    </div>
-                </div>
-
-                <!-- SSO Toggle -->
-                <label class="flex items-center justify-between bg-white p-4.5 rounded-[20px] border border-slate-200/80 shadow-sm cursor-pointer active:scale-[0.98] transition-all hover:bg-slate-50">
-                    <div>
-                        <p class="text-[14px] font-black text-slate-800">หักประกันสังคม 5%</p>
-                        <p class="text-[11px] text-slate-500 font-bold mt-0.5">สูงสุดไม่เกิน 750 บาท</p>
-                    </div>
-                    <div class="relative inline-block w-[52px] h-7 align-middle select-none">
-                        <input type="checkbox" v-model="monthlySettings[selectedTab].deductSSO" class="toggle-checkbox absolute block w-7 h-7 rounded-full bg-white border-[3px] border-slate-200 appearance-none cursor-pointer transition-all duration-300 z-10 m-0 p-0 top-0 left-0 shadow-sm"/>
-                        <div class="toggle-label block overflow-hidden h-7 rounded-full bg-slate-200 cursor-pointer transition-all duration-300 m-0 p-0"></div>
-                    </div>
-                </label>
-
-                <div class="pt-6 border-t border-slate-100 space-y-3">
-                    <button @click="showSettings = false" class="w-full bg-slate-800 text-white font-bold py-4.5 rounded-[20px] transition-transform active:scale-[0.98] shadow-lg shadow-slate-800/20 text-[15px]">
+                <!-- Actions -->
+                <div class="pt-4 space-y-3">
+                    <button @click="showSettings = false" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3.5 rounded-lg transition-colors text-[14px]">
                         บันทึกการตั้งค่า
                     </button>
-                    <!-- Show Tutorial Button -->
-                    <button @click="showSettings = false; onboardingStep = 2; showOnboarding = true" class="w-full bg-slate-50 border border-slate-200/80 text-slate-700 font-bold py-4 rounded-[20px] transition-transform active:scale-[0.98] text-[14px] flex justify-center items-center shadow-sm">
-                        <i class="ph-bold ph-info mr-2 text-[18px]"></i> ดูวิธีใช้งานแอปอีกครั้ง
-                    </button>
-                    <button @click="promptReset" class="w-full bg-rose-50 text-rose-600 font-bold py-4 rounded-[20px] transition-transform active:scale-[0.98] text-[14px] flex justify-center items-center">
-                        <i class="ph-bold ph-trash mr-2 text-[18px]"></i> ล้างข้อมูลแอปทั้งหมด
-                    </button>
+                    <div class="flex gap-2">
+                        <button @click="showSettings = false; onboardingStep = 2; showOnboarding = true" class="flex-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 font-semibold py-2.5 rounded-lg transition-colors text-[12px] flex justify-center items-center">
+                            <i class="ph ph-info mr-1.5 text-[16px]"></i> วิธีใช้งาน
+                        </button>
+                        <button @click="promptReset" class="flex-1 bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 font-semibold py-2.5 rounded-lg transition-colors text-[12px] flex justify-center items-center">
+                            <i class="ph ph-trash mr-1.5 text-[16px]"></i> ล้างข้อมูล
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </Transition>
 
-    <!-- Custom Confirm Reset Modal -->
     <Transition name="fade">
-        <div v-if="showConfirmReset" class="fixed inset-0 bg-slate-900/60 z-[60] backdrop-blur-sm flex items-center justify-center p-5" @click.self="cancelReset">
-            <div class="bg-white rounded-[32px] p-7 w-full max-w-sm shadow-2xl scale-100 transition-transform relative overflow-hidden">
-                <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm relative z-10">
-                    <i class="ph-bold ph-warning-circle text-[32px]"></i>
+        <div v-if="showConfirmReset" class="fixed inset-0 sm:absolute bg-slate-900/60 z-[60] backdrop-blur-sm flex items-center justify-center p-5" @click.self="cancelReset">
+            <div class="bg-white rounded-xl p-6 w-full max-w-sm shadow-xl scale-100 transition-transform">
+                <div class="flex items-center gap-3 mb-4 border-b border-slate-100 pb-3">
+                    <div class="w-10 h-10 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center shrink-0">
+                        <i class="ph-fill ph-warning-circle text-[22px]"></i>
+                    </div>
+                    <h3 class="text-[16px] font-bold text-slate-800">ยืนยันการล้างข้อมูล</h3>
                 </div>
-                <h3 class="text-[20px] font-black text-center text-slate-800 mb-2 relative z-10">ยืนยันการล้างข้อมูล?</h3>
-                <p class="text-center text-slate-500 font-medium text-[13px] mb-7 relative z-10">ข้อมูลการทำงานและการตั้งค่าตลอดปีจะถูกลบและกลับเป็นค่าเริ่มต้น ไม่สามารถกู้คืนได้</p>
-                <div class="flex gap-3 relative z-10">
-                    <button @click="cancelReset" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition-colors">
+                <p class="text-slate-600 text-[13px] mb-6 leading-relaxed">การกระทำนี้จะลบข้อมูลการทำงานและการตั้งค่าตลอดปีทั้งหมด กลับไปเป็นค่าเริ่มต้นของระบบ และไม่สามารถกู้คืนได้</p>
+                <div class="flex gap-2">
+                    <button @click="cancelReset" class="flex-1 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold rounded-md transition-colors text-[13px]">
                         ยกเลิก
                     </button>
-                    <button @click="executeReset" class="flex-1 py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-2xl transition-colors shadow-lg shadow-rose-600/25">
-                        ล้างข้อมูล
+                    <button @click="executeReset" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-md transition-colors text-[13px]">
+                        ยืนยันล้างข้อมูล
                     </button>
                 </div>
             </div>
         </div>
     </Transition>
 
-    <!-- ONBOARDING & SETUP WIZARD -->
     <Transition name="fade">
-        <div v-if="showOnboarding" class="fixed inset-0 bg-slate-900/60 z-[70] backdrop-blur-md flex flex-col justify-end">
-            <div class="bg-white rounded-t-[32px] w-full max-h-[90vh] overflow-y-auto pb-safe flex flex-col shadow-2xl">
+        <div v-if="showOnboarding" class="fixed inset-0 sm:absolute bg-slate-900/80 z-[70] backdrop-blur-md flex flex-col justify-end items-center sm:justify-center p-4">
+            <div class="bg-white rounded-xl w-full max-w-sm max-h-[90vh] overflow-y-auto flex flex-col shadow-2xl">
                 
                 <!-- STEP 1: Set Wages -->
                 <Transition name="slide-fade" mode="out-in">
-                    <div v-if="onboardingStep === 1" class="p-7 flex flex-col h-full">
-                        <div class="text-center mb-7 mt-2">
-                            <div class="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 rounded-[20px] flex items-center justify-center mx-auto mb-5 shadow-sm border border-white">
-                                <i class="ph-fill ph-hand-waving text-[36px]"></i>
-                            </div>
-                            <h2 class="text-[26px] font-black text-slate-800 tracking-tight">ยินดีต้อนรับ!</h2>
-                            <p class="text-slate-500 font-medium text-[13px] mt-1.5 leading-relaxed">มาเริ่มตั้งค่าข้อมูลเบื้องต้นของคุณกันก่อน<br>(สามารถแก้ไขได้ในภายหลัง)</p>
+                    <div v-if="onboardingStep === 1" class="p-6 flex flex-col">
+                        <div class="mb-6 border-b border-slate-100 pb-4">
+                            <h2 class="text-[18px] font-bold text-slate-800">ตั้งค่าระบบเริ่มต้น</h2>
+                            <p class="text-slate-500 text-[12px] mt-1">กรุณาระบุข้อมูลพื้นฐานเพื่อใช้ในการคำนวณ (แก้ไขภายหลังได้)</p>
                         </div>
 
-                        <div class="space-y-4 flex-1">
-                            
+                        <div class="space-y-4">
                             <div class="space-y-1.5">
-                                <label class="text-[13px] font-bold text-slate-700 ml-1">วันที่เริ่มงานวันแรก</label>
-                                <input type="date" v-model="globalSettings.startDate" class="w-full bg-slate-50 border border-slate-200/80 rounded-[20px] px-4 py-3 text-[16px] font-bold font-sans-en text-indigo-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 shadow-sm transition-all">
+                                <label class="text-[12px] font-semibold text-slate-700">วันที่เริ่มงาน (Start Date)</label>
+                                <input type="date" v-model="globalSettings.startDate" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2.5 text-[14px] font-sans-en text-slate-900 outline-none focus:border-blue-500 focus:ring-1">
                             </div>
 
-                            <div class="space-y-1.5 mt-2">
-                                <label class="text-[13px] font-bold text-slate-700 ml-1">ค่าแรงพื้นฐาน (บาท/วัน)</label>
-                                <input type="number" v-model.number="globalSettings.baseWage" class="w-full bg-slate-50 border border-slate-200/80 rounded-[20px] px-4 py-3 text-[20px] font-black font-sans-en text-indigo-700 outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-center shadow-sm transition-all">
+                            <div class="space-y-1.5">
+                                <label class="text-[12px] font-semibold text-slate-700">ค่าแรงพื้นฐาน (Base Wage/Day)</label>
+                                <div class="relative">
+                                    <input type="number" v-model.number="globalSettings.baseWage" class="w-full bg-white border border-slate-300 rounded-md pl-3 pr-12 py-2.5 text-[16px] font-bold font-sans-en text-slate-900 outline-none focus:border-blue-500 focus:ring-1">
+                                    <span class="absolute inset-y-0 right-3 flex items-center text-slate-400 text-[12px]">THB</span>
+                                </div>
                             </div>
                             
-                            <div class="bg-indigo-50/80 p-4 rounded-[20px] flex justify-between items-center border border-indigo-100/80 shadow-sm">
-                                <span class="text-[13px] font-bold text-indigo-900">เรทรายชั่วโมง (Auto)</span>
-                                <span class="text-[20px] font-black text-indigo-600 font-sans-en drop-shadow-sm">{{ globalSettings.hourlyRate }} ฿/h</span>
+                            <div class="bg-slate-50 p-3 rounded border border-slate-200 flex justify-between items-center">
+                                <span class="text-[11px] font-semibold text-slate-600">เรทรายชั่วโมง (คำนวณจาก 8 ชม.)</span>
+                                <span class="text-[14px] font-bold text-blue-600 font-sans-en">{{ globalSettings.hourlyRate }} ฿</span>
                             </div>
                             
-                            <div class="grid grid-cols-2 gap-3 mt-5">
+                            <div class="grid grid-cols-2 gap-3 mt-2">
                                 <div class="space-y-1.5">
-                                    <label class="text-[11px] font-bold text-slate-500 ml-1">ค่าอาหาร</label>
-                                    <input type="number" v-model.number="globalSettings.foodAllowance" class="w-full bg-slate-50 border border-slate-200/80 rounded-2xl px-3 py-3 text-center text-[15px] font-black text-slate-700 shadow-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none">
+                                    <label class="text-[11px] font-semibold text-slate-600">ค่าอาหาร</label>
+                                    <input type="number" v-model.number="globalSettings.foodAllowance" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] font-sans-en">
                                 </div>
                                 <div class="space-y-1.5">
-                                    <label class="text-[11px] font-bold text-slate-500 ml-1">ค่าอาหาร(มีOT)</label>
-                                    <input type="number" v-model.number="globalSettings.otFoodAllowance" class="w-full bg-slate-50 border border-slate-200/80 rounded-2xl px-3 py-3 text-center text-[15px] font-black text-slate-700 shadow-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none">
+                                    <label class="text-[11px] font-semibold text-slate-600">อาหาร(ทำ OT)</label>
+                                    <input type="number" v-model.number="globalSettings.otFoodAllowance" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] font-sans-en">
                                 </div>
                                 <div class="space-y-1.5">
-                                    <label class="text-[11px] font-bold text-slate-500 ml-1">ค่ากะดึก</label>
-                                    <input type="number" v-model.number="globalSettings.shiftAllowanceNoOT" class="w-full bg-slate-50 border border-slate-200/80 rounded-2xl px-3 py-3 text-center text-[15px] font-black text-slate-700 shadow-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none">
+                                    <label class="text-[11px] font-semibold text-slate-600">ค่ากะดึก</label>
+                                    <input type="number" v-model.number="globalSettings.shiftAllowanceNoOT" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] font-sans-en">
                                 </div>
                                 <div class="space-y-1.5">
-                                    <label class="text-[11px] font-bold text-slate-500 ml-1">ค่ากะดึก(มีOT)</label>
-                                    <input type="number" v-model.number="globalSettings.shiftAllowanceWithOT" class="w-full bg-slate-50 border border-slate-200/80 rounded-2xl px-3 py-3 text-center text-[15px] font-black text-slate-700 shadow-sm focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none">
+                                    <label class="text-[11px] font-semibold text-slate-600">กะดึก(ทำ OT)</label>
+                                    <input type="number" v-model.number="globalSettings.shiftAllowanceWithOT" class="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-[14px] font-sans-en">
                                 </div>
                             </div>
                         </div>
 
-                        <button @click="onboardingStep = 2" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4.5 rounded-[20px] transition-transform active:scale-[0.98] shadow-lg shadow-indigo-600/25 text-[15px] mt-8 flex justify-center items-center">
-                            ถัดไป <i class="ph-bold ph-arrow-right ml-2 text-lg"></i>
+                        <button @click="onboardingStep = 2" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md transition-colors text-[14px] mt-6 flex justify-center items-center">
+                            ถัดไป <i class="ph ph-arrow-right ml-1.5"></i>
                         </button>
                     </div>
                 </Transition>
 
                 <!-- STEP 2: App Tutorial -->
                 <Transition name="slide-fade" mode="out-in">
-                    <div v-if="onboardingStep === 2" class="p-7 flex flex-col h-full">
-                        <div class="text-center mb-7 mt-2">
-                            <h2 class="text-[26px] font-black text-slate-800 tracking-tight">วิธีใช้งานเบื้องต้น</h2>
-                            <p class="text-slate-500 font-medium text-[13px] mt-1.5">ออกแบบมาเพื่อให้คุณจัดการรายได้ง่ายที่สุด</p>
+                    <div v-if="onboardingStep === 2" class="p-6 flex flex-col">
+                        <div class="mb-5 border-b border-slate-100 pb-4 text-center">
+                            <h2 class="text-[18px] font-bold text-slate-800">คู่มือการใช้งานระบบ</h2>
                         </div>
 
-                        <div class="space-y-4 flex-1">
-                            <!-- Tip 1 -->
-                            <div class="flex items-start gap-4 p-4 bg-white rounded-[20px] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
-                                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shrink-0 border border-emerald-100">
-                                    <i class="ph-bold ph-cursor-click text-[22px]"></i>
-                                </div>
+                        <div class="space-y-3">
+                            <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <i class="ph ph-cursor-click text-[20px] text-blue-600 mt-0.5 shrink-0"></i>
                                 <div>
-                                    <h4 class="font-black text-slate-800 text-[14px]">แตะ 1 ครั้งที่ปฏิทิน</h4>
-                                    <p class="text-[12px] font-medium text-slate-500 mt-1 leading-relaxed">เปลี่ยนสถานะเป็น <span class="text-emerald-600 font-bold">"ทำงาน"</span> แตะอีกครั้งสลับเป็น <span class="text-blue-600 font-bold">"ทำโอที(10h)"</span> หรือ <span class="text-slate-400 font-bold">"หยุด"</span></p>
+                                    <h4 class="font-bold text-slate-800 text-[13px]">แตะปฏิทิน 1 ครั้ง</h4>
+                                    <p class="text-[11px] text-slate-600 mt-1">สลับสถานะด่วน: ทำงาน &rarr; โอที(10h) &rarr; หยุด</p>
                                 </div>
                             </div>
                             
-                            <!-- Tip 2 -->
-                            <div class="flex items-start gap-4 p-4 bg-white rounded-[20px] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
-                                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0 border border-indigo-100">
-                                    <i class="ph-bold ph-hand-tap text-[22px]"></i>
-                                </div>
+                            <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <i class="ph ph-hand-tap text-[20px] text-indigo-600 mt-0.5 shrink-0"></i>
                                 <div>
-                                    <h4 class="font-black text-slate-800 text-[14px]">แตะค้างไว้ (Long Press)</h4>
-                                    <p class="text-[12px] font-medium text-slate-500 mt-1 leading-relaxed">เปิดหน้าต่างตั้งค่ารายวันอย่างละเอียด เช่น เลือกว่าทำกะเช้า/กะดึก หรือแก้ชั่วโมงทำโอที</p>
+                                    <h4 class="font-bold text-slate-800 text-[13px]">แตะปฏิทินค้างไว้</h4>
+                                    <p class="text-[11px] text-slate-600 mt-1">เปิดฟอร์มเพื่อระบุกะ (เช้า/ดึก) และชั่วโมงทำโอทีแบบละเอียด</p>
                                 </div>
                             </div>
 
-                            <!-- Tip 3 -->
-                            <div class="flex items-start gap-4 p-4 bg-white rounded-[20px] border border-slate-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
-                                <div class="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shrink-0 border border-amber-100">
-                                    <i class="ph-bold ph-calculator text-[22px]"></i>
-                                </div>
+                            <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                                <i class="ph ph-calculator text-[20px] text-emerald-600 mt-0.5 shrink-0"></i>
                                 <div>
-                                    <h4 class="font-black text-slate-800 text-[14px]">ระบบคำนวณอัตโนมัติ</h4>
-                                    <p class="text-[12px] font-medium text-slate-500 mt-1 leading-relaxed">แอปจะคำนวณเบี้ยขยันสเตปอัพ (600/800/1000) และหักประกันสังคม (5%) ให้อัตโนมัติ</p>
+                                    <h4 class="font-bold text-slate-800 text-[13px]">ระบบคำนวณอัตโนมัติ</h4>
+                                    <p class="text-[11px] text-slate-600 mt-1">ระบบจะคำนวณเบี้ยขยันสเตปอัพ (600/800/1000) และหักประกันสังคมให้อัตโนมัติในหน้ารายรอบบิล</p>
                                 </div>
                             </div>
                         </div>
 
-                        <button @click="onboardingStep = 3" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4.5 rounded-[20px] transition-transform active:scale-[0.98] shadow-lg shadow-indigo-600/25 text-[15px] mt-8 flex justify-center items-center">
-                            ถัดไป <i class="ph-bold ph-arrow-right ml-2 text-lg"></i>
+                        <button @click="onboardingStep = 3" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-md transition-colors text-[14px] mt-6 flex justify-center items-center">
+                            เข้าสู่ระบบ <i class="ph ph-sign-in ml-1.5 text-[18px]"></i>
                         </button>
                     </div>
                 </Transition>
 
-                <!-- STEP 3: Install PWA Guide -->
+                <!-- STEP 3: Install PWA (Simplified for Portal) -->
                 <Transition name="slide-fade" mode="out-in">
-                    <div v-if="onboardingStep === 3" class="p-7 flex flex-col h-full">
-                        <div class="text-center mb-7 mt-2">
-                            <div class="w-16 h-16 bg-slate-900 text-white rounded-[20px] flex items-center justify-center mx-auto mb-5 shadow-lg shadow-slate-900/20">
-                                <i class="ph-fill ph-app-window text-[36px]"></i>
-                            </div>
-                            <h2 class="text-[26px] font-black text-slate-800 tracking-tight">ติดตั้งเป็นแอปหลัก</h2>
-                            <p class="text-slate-500 font-medium text-[13px] mt-1.5 leading-relaxed">แนะนำให้ติดตั้งไว้บนหน้าจอหลักเพื่อความสะดวก ใช้งานแบบเต็มจอ และเข้าถึงแบบออฟไลน์ได้</p>
+                    <div v-if="onboardingStep === 3" class="p-6 flex flex-col text-center">
+                        <i class="ph-fill ph-check-circle text-[48px] text-emerald-500 mx-auto mb-3"></i>
+                        <h2 class="text-[18px] font-bold text-slate-800">ตั้งค่าเสร็จสมบูรณ์</h2>
+                        <p class="text-[12px] text-slate-500 mt-1 mb-6">คุณสามารถเริ่มใช้งานระบบ CorpHR Portal ได้ทันที</p>
+                        
+                        <div class="bg-blue-50 text-blue-800 p-4 rounded-lg text-[11px] text-left border border-blue-100 mb-6">
+                            <p class="font-bold mb-1"><i class="ph ph-device-mobile"></i> ทิปส์การใช้งาน:</p>
+                            <p>เพิ่มระบบนี้ไปยังหน้าจอโฮม (Add to Home Screen) ผ่านเมนูของเบราว์เซอร์ เพื่อใช้งานแบบแอปพลิเคชันเต็มรูปแบบ</p>
                         </div>
 
-                        <div class="space-y-4 flex-1">
-                            <!-- Detect iOS -->
-                            <div v-if="isIOSUser" class="bg-slate-50 p-6 rounded-[24px] border border-slate-200/80 shadow-sm">
-                                <h4 class="font-black text-slate-800 mb-4 flex items-center text-[15px]"><i class="ph-fill ph-apple-logo mr-2 text-[20px]"></i>สำหรับ iOS (iPhone/iPad)</h4>
-                                <ol class="text-[13px] font-medium text-slate-600 space-y-4 list-decimal pl-5 marker:font-black marker:text-indigo-500">
-                                    <li>กดปุ่ม <b>Share</b> <i class="ph-bold ph-export inline mx-1 text-slate-800"></i> ด้านล่างของ Safari</li>
-                                    <li>เลื่อนลงมาแล้วเลือก <b>"เพิ่มไปยังหน้าจอโฮม"</b><br><span class="text-[11px] text-slate-400 font-bold">(Add to Home Screen <i class="ph-bold ph-plus-square inline mx-1"></i>)</span></li>
-                                    <li>กด <b>"เพิ่ม"</b> ที่มุมขวาบน</li>
-                                </ol>
-                            </div>
-                            
-                            <!-- Android / Others -->
-                            <div v-else class="bg-slate-50 p-6 rounded-[24px] border border-slate-200/80 shadow-sm">
-                                <h4 class="font-black text-slate-800 mb-4 flex items-center text-[15px]"><i class="ph-fill ph-android-logo mr-2 text-[20px] text-emerald-500"></i>สำหรับ Android</h4>
-                                <ol class="text-[13px] font-medium text-slate-600 space-y-4 list-decimal pl-5 marker:font-black marker:text-indigo-500">
-                                    <li>แตะไอคอน <b>จุด 3 จุด</b> <i class="ph-bold ph-dots-three-vertical inline mx-1 text-slate-800"></i> มุมขวาบนของเบราว์เซอร์</li>
-                                    <li>เลือก <b>"เพิ่มลงในหน้าจอหลัก"</b><br><span class="text-[11px] text-slate-400 font-bold">(Add to Home screen)</span></li>
-                                    <li>กดยืนยันการติดตั้ง</li>
-                                </ol>
-                            </div>
-                        </div>
-
-                        <button @click="finishOnboarding" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-4.5 rounded-[20px] transition-transform active:scale-[0.98] shadow-xl shadow-slate-900/25 text-[15px] mt-8 flex justify-center items-center">
-                            <i class="ph-bold ph-check-circle mr-2 text-[20px]"></i> เริ่มใช้งานแอป
+                        <button @click="finishOnboarding" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-md transition-colors text-[14px]">
+                            ตกลง
                         </button>
                     </div>
                 </Transition>
@@ -696,12 +660,10 @@
 
     const app = createApp({
         setup() {
-            // Check Device for Tutorial
             const isIOSUser = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-            // Global Config (Editable via App)
             const defaultGlobalSettings = {
-                startDate: '2026-04-22', // Default Start date added here
+                startDate: '2026-04-22', 
                 baseWage: 362,
                 hourlyRate: 45.25,
                 foodAllowance: 45,
@@ -712,14 +674,12 @@
             
             const globalSettings = reactive({...defaultGlobalSettings});
 
-            // Auto calculate hourly rate when base wage changes
             watch(() => globalSettings.baseWage, (newVal) => {
                 if(newVal > 0) {
                     globalSettings.hourlyRate = Number((newVal / 8).toFixed(2));
                 }
             });
 
-            // Onboarding State
             const showOnboarding = ref(false);
             const onboardingStep = ref(1);
 
@@ -727,7 +687,6 @@
                 showOnboarding.value = false;
             };
 
-            // Holidays 2026
             const holidays2026 = {
                 '2026-05-01': 'วันแรงงานแห่งชาติ',
                 '2026-06-01': 'ชดเชยวันอาสาฬหบูชา',
@@ -739,27 +698,24 @@
                 '2026-12-31': 'วันสิ้นปี'
             };
 
-            // Full year cycles (Added explicit 'start' and 'end' for calculations)
             const cycles = [
-                { id: 'apr', name: 'เมษายน', rangeStr: '22 เม.ย. - 25 เม.ย.', payday: '5 พ.ค. 26', start: '2026-04-22', end: '2026-04-25' },
-                { id: 'may', name: 'พฤษภาคม', rangeStr: '26 เม.ย. - 25 พ.ค.', payday: '5 มิ.ย. 26', start: '2026-04-26', end: '2026-05-25' },
-                { id: 'jun', name: 'มิถุนายน', rangeStr: '26 พ.ค. - 25 มิ.ย.', payday: '5 ก.ค. 26', start: '2026-05-26', end: '2026-06-25' },
-                { id: 'jul', name: 'กรกฎาคม', rangeStr: '26 มิ.ย. - 25 ก.ค.', payday: '5 ส.ค. 26', start: '2026-06-26', end: '2026-07-25' },
-                { id: 'aug', name: 'สิงหาคม', rangeStr: '26 ก.ค. - 25 ส.ค.', payday: '5 ก.ย. 26', start: '2026-07-26', end: '2026-08-25' },
-                { id: 'sep', name: 'กันยายน', rangeStr: '26 ส.ค. - 25 ก.ย.', payday: '5 ต.ค. 26', start: '2026-08-26', end: '2026-09-25' },
-                { id: 'oct', name: 'ตุลาคม', rangeStr: '26 ก.ย. - 25 ต.ค.', payday: '5 พ.ย. 26', start: '2026-09-26', end: '2026-10-25' },
-                { id: 'nov', name: 'พฤศจิกายน', rangeStr: '26 ต.ค. - 25 พ.ย.', payday: '5 ธ.ค. 26', start: '2026-10-26', end: '2026-11-25' },
-                { id: 'dec', name: 'ธันวาคม', rangeStr: '26 พ.ย. - 25 ธ.ค.', payday: '5 ม.ค. 27', start: '2026-11-26', end: '2026-12-25' },
-                { id: 'jan27', name: 'มกราคม 69', rangeStr: '26 ธ.ค. - 25 ม.ค.', payday: '5 ก.พ. 27', start: '2026-12-26', end: '2027-01-25' }
+                { id: 'apr', name: 'เม.ย.', rangeStr: '22 เม.ย. - 25 เม.ย.', payday: '5 พ.ค. 26', start: '2026-04-22', end: '2026-04-25' },
+                { id: 'may', name: 'พ.ค.', rangeStr: '26 เม.ย. - 25 พ.ค.', payday: '5 มิ.ย. 26', start: '2026-04-26', end: '2026-05-25' },
+                { id: 'jun', name: 'มิ.ย.', rangeStr: '26 พ.ค. - 25 มิ.ย.', payday: '5 ก.ค. 26', start: '2026-05-26', end: '2026-06-25' },
+                { id: 'jul', name: 'ก.ค.', rangeStr: '26 มิ.ย. - 25 ก.ค.', payday: '5 ส.ค. 26', start: '2026-06-26', end: '2026-07-25' },
+                { id: 'aug', name: 'ส.ค.', rangeStr: '26 ก.ค. - 25 ส.ค.', payday: '5 ก.ย. 26', start: '2026-07-26', end: '2026-08-25' },
+                { id: 'sep', name: 'ก.ย.', rangeStr: '26 ส.ค. - 25 ก.ย.', payday: '5 ต.ค. 26', start: '2026-08-26', end: '2026-09-25' },
+                { id: 'oct', name: 'ต.ค.', rangeStr: '26 ก.ย. - 25 ต.ค.', payday: '5 พ.ย. 26', start: '2026-09-26', end: '2026-10-25' },
+                { id: 'nov', name: 'พ.ย.', rangeStr: '26 ต.ค. - 25 พ.ย.', payday: '5 ธ.ค. 26', start: '2026-10-26', end: '2026-11-25' },
+                { id: 'dec', name: 'ธ.ค.', rangeStr: '26 พ.ย. - 25 ธ.ค.', payday: '5 ม.ค. 27', start: '2026-11-26', end: '2026-12-25' },
+                { id: 'jan27', name: 'ม.ค.69', rangeStr: '26 ธ.ค. - 25 ม.ค.', payday: '5 ก.พ. 27', start: '2026-12-26', end: '2027-01-25' }
             ];
 
-            // State
             const selectedTab = ref('apr');
             const showSettings = ref(false);
             const showConfirmReset = ref(false); 
             const allDays = reactive([]);
             
-            // Dynamic Monthly Settings init
             const defaultMonthlySettings = () => {
                 let obj = {};
                 cycles.forEach(c => {
@@ -769,7 +725,6 @@
             };
             const monthlySettings = reactive(defaultMonthlySettings());
 
-            // Probation Calculation dynamically based on input Start Date (119 days)
             const probationDateStr = computed(() => {
                 if (!globalSettings.startDate) return '';
                 const d = new Date(globalSettings.startDate);
@@ -777,18 +732,15 @@
                 return d.toISOString().split('T')[0];
             });
 
-            // Check if Probation Date falls inside the currently selected cycle
             const isProbationInCurrentCycle = computed(() => {
                 if (!probationDateStr.value || !currentCycleData.value) return false;
                 return probationDateStr.value >= currentCycleData.value.start && probationDateStr.value <= currentCycleData.value.end;
             });
 
-            // Modal State
             const activeDayModal = ref(null);
             const modalWorkHours = ref(0);
             const modalShift = ref('Day');
 
-            // Shift Calculation Helper (Alternating every 14 days)
             const getShiftForDate = (dateStr) => {
                 const d = new Date(dateStr);
                 if (d >= new Date('2026-04-22') && d <= new Date('2026-04-25')) return 'Day';
@@ -842,11 +794,10 @@
             };
 
             onMounted(() => {
-                showOnboarding.value = true; // In-memory session: always show onboarding on refresh
+                showOnboarding.value = true; // Kept in memory for preview
                 generateDays(); 
             });
 
-            // Custom Reset Functionality
             const promptReset = () => {
                 showConfirmReset.value = true;
             };
@@ -862,12 +813,10 @@
                 showSettings.value = false;
                 showConfirmReset.value = false;
                 
-                // Show Onboarding again after reset
                 onboardingStep.value = 1;
                 showOnboarding.value = true;
             };
 
-            // Computed
             const currentCycleData = computed(() => cycles.find(c => c.id === selectedTab.value) || {});
             
             const calendarGrid = computed(() => {
@@ -887,7 +836,6 @@
                 return grid;
             });
 
-            // Automated Attendance Bonus Calculation
             const attendanceBonusMap = computed(() => {
                 let consecutiveMonths = 0;
                 let map = {};
@@ -931,7 +879,6 @@
                 return hours;
             };
 
-            // Touch / Press Logic
             let pressTimer = null;
             let isLongPressAction = false;
             let touchStartY = 0;
@@ -1013,14 +960,13 @@
                 closeModal();
             };
 
-            // ใช้ค่าจาก globalSettings เพื่อคำนวณเงิน
             const _calcPay = (day, isWorking, workHours) => {
                 let wageOT = 0;
                 let food = 0;
                 let shift = 0;
                 let ssoBase = 0; 
 
-                const g = globalSettings; // alias for shorthand
+                const g = globalSettings;
 
                 if (!isWorking) {
                     if (day.isHoliday) {
@@ -1120,7 +1066,6 @@
                 return { grandIncome, grandDeduction, grandNetPay: grandIncome - grandDeduction };
             });
 
-            // UI Render Helpers
             const getCellClass = (day) => {
                 if(day.empty) return 'cell-empty';
                 if(!day.isWorking) {
@@ -1134,14 +1079,14 @@
             const getDateColor = (day) => {
                 if (day.isSunday || day.isHoliday) return 'text-rose-600';
                 if (day.isWorking) {
-                    return day.workHours > 8 ? 'text-blue-900' : 'text-emerald-900';
+                    return day.workHours > 8 ? 'text-blue-700' : 'text-emerald-700';
                 }
-                return 'text-slate-500';
+                return 'text-slate-600';
             };
             
             const getPayColor = (day) => {
                 if (day.isWorking) {
-                    return day.workHours > 8 ? 'text-blue-600' : 'text-emerald-700';
+                    return day.workHours > 8 ? 'text-blue-700' : 'text-emerald-700';
                 }
                 return 'text-slate-400';
             }
@@ -1152,7 +1097,6 @@
                 return `${day.workHours}h`;
             };
 
-            // Formatters
             const formatMoney = (val) => new Intl.NumberFormat('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(val);
             
             const getDateNumber = (dateStr) => new Date(dateStr).getDate();
@@ -1187,7 +1131,7 @@
         }
     });
 
-    app.mount('#app');
+    app.mount('#app-container');
 </script>
 
 </body>
