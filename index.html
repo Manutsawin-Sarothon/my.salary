@@ -458,7 +458,20 @@
 
                     <div class="space-y-1.5">
                         <label class="text-[12px] font-bold text-slate-700">วันที่เริ่มงานวันแรก (คำนวณผ่านโปร)</label>
-                        <input type="date" v-model="globalSettings.startDate" class="block w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-[14px] font-bold font-sans-en text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                        <div class="flex gap-2">
+                            <select :value="startDateDay" @change="setStartDateDay($event.target.value)" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-xl px-2 py-3 text-[14px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                                <option value="">วัน</option>
+                                <option v-for="d in 31" :key="d" :value="String(d).padStart(2,'0')">{{ d }}</option>
+                            </select>
+                            <select :value="startDateMonth" @change="setStartDateMonth($event.target.value)" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-xl px-2 py-3 text-[14px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                                <option value="">เดือน</option>
+                                <option v-for="(m,i) in ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']" :key="i+1" :value="String(i+1).padStart(2,'0')">{{ m }}</option>
+                            </select>
+                            <select :value="startDateYear" @change="setStartDateYear($event.target.value)" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-xl px-2 py-3 text-[14px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                                <option value="">ปี</option>
+                                <option v-for="y in startDateYearOptions" :key="y" :value="String(y)">{{ y + 543 }}</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-3">
@@ -600,7 +613,20 @@
                         <div class="space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                             <div class="space-y-1.5">
                                 <label class="text-[12px] font-bold text-slate-700">วันที่เริ่มงาน (เพื่อคำนวณผ่านโปร)</label>
-                                <input type="date" v-model="globalSettings.startDate" class="block w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-[14px] font-bold font-sans-en text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                                <div class="flex gap-2">
+                                    <select :value="startDateDay" @change="setStartDateDay($event.target.value)" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-xl px-2 py-3 text-[14px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                                        <option value="">วัน</option>
+                                        <option v-for="d in 31" :key="d" :value="String(d).padStart(2,'0')">{{ d }}</option>
+                                    </select>
+                                    <select :value="startDateMonth" @change="setStartDateMonth($event.target.value)" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-xl px-2 py-3 text-[14px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                                        <option value="">เดือน</option>
+                                        <option v-for="(m,i) in ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']" :key="i+1" :value="String(i+1).padStart(2,'0')">{{ m }}</option>
+                                    </select>
+                                    <select :value="startDateYear" @change="setStartDateYear($event.target.value)" class="flex-1 min-w-0 bg-white border border-slate-300 rounded-xl px-2 py-3 text-[14px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all">
+                                        <option value="">ปี</option>
+                                        <option v-for="y in startDateYearOptions" :key="y" :value="String(y)">{{ y + 543 }}</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="space-y-1.5">
                                 <label class="text-[12px] font-bold text-slate-700">ค่าแรงพื้นฐาน (บาท/วัน)</label>
@@ -1311,6 +1337,32 @@
                 return `วัน${days[d.getDay()]}ที่ ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()+543}`;
             };
 
+            // --- Start Date Dropdown Helpers ---
+            const startDateDay = computed(() => {
+                return globalSettings.startDate ? globalSettings.startDate.split('-')[2] : '';
+            });
+            const startDateMonth = computed(() => {
+                return globalSettings.startDate ? globalSettings.startDate.split('-')[1] : '';
+            });
+            const startDateYear = computed(() => {
+                return globalSettings.startDate ? globalSettings.startDate.split('-')[0] : '';
+            });
+            const startDateYearOptions = computed(() => {
+                const cur = new Date().getFullYear();
+                return Array.from({ length: 10 }, (_, i) => cur - 9 + i);
+            });
+            const _setStartDatePart = (val, partIndex) => {
+                const parts = (globalSettings.startDate || '').split('-');
+                while (parts.length < 3) parts.push('');
+                parts[partIndex] = val;
+                if (parts[0] && parts[1] && parts[2]) {
+                    globalSettings.startDate = parts.join('-');
+                }
+            };
+            const setStartDateDay = (v) => _setStartDatePart(v, 2);
+            const setStartDateMonth = (v) => _setStartDatePart(v, 1);
+            const setStartDateYear = (v) => _setStartDatePart(v, 0);
+
             return {
                 cycles, selectedTab, calendarGrid, currentCycleData,
                 monthlySettings, globalSettings,
@@ -1324,7 +1376,9 @@
                 calculateDailyPay, modalPreviewPay, cycleTotal, getCycleTotals, yearlySummary,
                 getCellClass, getDateColor, getPayColor, getStatusText, formatMoney, getDateNumber, formatDateFull, formatDateShort,
                 promptReset, cancelReset, executeReset,
-                probationDateStr, isProbationInCurrentCycle
+                probationDateStr, isProbationInCurrentCycle,
+                startDateDay, startDateMonth, startDateYear, startDateYearOptions,
+                setStartDateDay, setStartDateMonth, setStartDateYear
             };
         }
     });
