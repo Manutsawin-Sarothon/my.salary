@@ -48,7 +48,12 @@
 
         .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
+        
+        .slide-fade-enter-active { transition: all 0.3s ease-out; }
+        .slide-fade-leave-active { transition: all 0.2s ease-in; }
+        .slide-fade-enter-from, .slide-fade-leave-to { transform: translateX(10px); opacity: 0; }
 
+        /* Corporate Calendar Cell Styles */
         .cell-empty { background-color: transparent; border: none; pointer-events: none; }
         .cell-off { background-color: #ffffff; border: 1px solid #cbd5e1; color: #64748b; }
         .cell-work { background-color: #f0fdf4; border: 1px solid #86efac; color: #166534; }
@@ -302,6 +307,7 @@
 
     </main>
 
+    <!-- Full width flat bottom bar for Corporate look -->
     <div v-if="selectedTab !== 'summary'" class="bg-white border-t border-slate-200 px-5 pt-3 pb-safe flex justify-between items-center z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.02)]">
         <div>
             <p class="text-[11px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">รับสุทธิ (Net Pay)</p>
@@ -312,7 +318,6 @@
         </button>
     </div>
 
-    
     <!-- Day Detail Modal (Corporate Form Style) -->
     <Transition name="fade">
         <div v-if="activeDayModal" class="fixed inset-0 bg-slate-900/50 z-40 backdrop-blur-sm absolute" @click="closeModal"></div>
@@ -794,7 +799,7 @@
             };
 
             onMounted(() => {
-                showOnboarding.value = true; // Kept in memory for preview
+                showOnboarding.value = true; 
                 generateDays(); 
             });
 
